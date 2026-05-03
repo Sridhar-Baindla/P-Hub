@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -78,7 +79,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-content">
         <button className="modal-close" onClick={onClose}>
@@ -168,7 +169,8 @@ const AuthModal = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -26,8 +26,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '4rem 0', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-      <aside style={{ width: '250px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="container profile-layout" style={{ padding: '4rem 0' }}>
+      <aside className="profile-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', textAlign: 'center', marginBottom: '1rem' }}>
           <div style={{ width: '80px', height: '80px', background: 'var(--primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '2rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
             {user.name.substring(0, 2)}
@@ -68,11 +68,11 @@ const Profile = () => {
         </button>
       </aside>
 
-      <main style={{ flex: 1, background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+      <main className="profile-main" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
         {activeTab === 'profile' && (
           <div>
             <h2 style={{ marginBottom: '2rem' }}>Personal Information</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="profile-grid">
               <div className="input-group">
                 <label className="input-label">Full Name</label>
                 <input type="text" className="input-field" defaultValue={user.name} />

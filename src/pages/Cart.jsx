@@ -70,8 +70,8 @@ const Cart = () => {
     <div className="container" style={{ padding: '4rem 0' }}>
       <h1 style={{ marginBottom: '2rem' }}>Shopping Cart</h1>
       
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 60%', background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+      <div className="cart-layout">
+        <div className="cart-items" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
           {cartItems.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem 0' }}>
               <div style={{ width: '80px', height: '80px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--primary)' }}>
@@ -109,7 +109,7 @@ const Cart = () => {
           )}
         </div>
         
-        <div style={{ flex: '1 1 30%', background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', position: 'sticky', top: '100px' }}>
+        <div className="cart-summary" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', position: 'sticky', top: '100px' }}>
           <h3 style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>Order Summary</h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>

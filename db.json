@@ -6,6 +6,13 @@
       "email": "john@example.com",
       "password": "password123",
       "role": "admin"
+    },
+    {
+      "name": "sridhar",
+      "email": "sridharbaindla5121@gmail.com",
+      "password": "Sridhar@5121",
+      "role": "user",
+      "id": 2
     }
   ],
   "medicines": [

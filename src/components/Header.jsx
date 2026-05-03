@@ -51,7 +51,7 @@ const Header = () => {
 
   const markAllAsRead = () => {
     const unread = notifications.filter(n => !n.read);
-    Promise.all(unread.map(n => 
+    Promise.all(unread.map(n =>
       fetch(`http://localhost:5000/notifications/${n.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -78,10 +78,10 @@ const Header = () => {
     <header className="navbar">
       <div className="container nav-content relative">
         <Link to="/" className="logo">
-          <Pill size={28} color="var(--primary)" />
+          <img src="../src/assets/logo.png" alt="P-Hub Logo" style={{ height: '40px', width: 'auto' }} />
           P-Hub
         </Link>
-        
+
         <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
           <Link to="/about" className={`nav-link ${location.pathname.startsWith('/about') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>About Us</Link>
@@ -91,12 +91,8 @@ const Header = () => {
             <Link to="/admin" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Admin Panel</Link>
           )}
         </nav>
-        
+
         <div className="nav-actions">
-          <button className="icon-btn mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          
           {/* Search */}
           <div className="icon-wrapper">
             <button className="icon-btn" aria-label="Search" onClick={() => setShowSearch(!showSearch)}>
@@ -115,9 +111,9 @@ const Header = () => {
                 {searchResults.length > 0 && (
                   <div style={{ marginTop: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
                     {searchResults.map(item => (
-                      <Link 
-                        key={item.id} 
-                        to="/medicines" 
+                      <Link
+                        key={item.id}
+                        to="/medicines"
                         className="dropdown-item"
                         onClick={() => setShowSearch(false)}
                       >
@@ -161,8 +157,8 @@ const Header = () => {
                     <p style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: '1rem 0' }}>No notifications</p>
                   ) : (
                     notifications.map(n => (
-                      <div 
-                        key={n.id} 
+                      <div
+                        key={n.id}
                         className={`notification-item ${!n.read ? 'unread' : ''}`}
                         onClick={() => markAsRead(n.id)}
                       >
@@ -203,11 +199,14 @@ const Header = () => {
               </button>
             </div>
           ) : (
-            <button onClick={handleLogin} className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>
-              <User size={18} />
-              <span style={{ opacity: 0.7, fontWeight: 400 }}>Username</span>
+            <button onClick={handleLogin} className="icon-btn" aria-label="Login" title="Login">
+              <User size={20} />
             </button>
           )}
+
+          <button className="icon-btn mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />

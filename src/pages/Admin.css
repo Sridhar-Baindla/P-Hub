@@ -163,3 +163,38 @@
 .auth-guard input {
   margin-bottom: 1.5rem;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  
+  .admin-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 1rem;
+  }
+  
+  .admin-nav-item {
+    white-space: nowrap;
+    padding: 0.5rem 1rem;
+  }
+  
+  .admin-main {
+    padding: 1.5rem 1rem;
+  }
+  
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .data-table-container {
+    overflow-x: auto;
+  }
+}
