@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Pill, ShoppingCart, User, Search, Bell, X, LogOut, Check } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import AuthModal from './AuthModal';
 
 const Header = () => {
   const { user, login, logout, cartCount } = useContext(AppContext);
@@ -12,6 +13,7 @@ const Header = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -60,12 +62,7 @@ const Header = () => {
   };
 
   const handleLogin = () => {
-    // Mock login - fetch user 1 from db
-    fetch('http://localhost:5000/users/1')
-      .then(res => res.json())
-      .then(data => {
-        login(data);
-      });
+    setShowAuthModal(true);
   };
 
   const handleLogout = () => {
@@ -203,11 +200,12 @@ const Header = () => {
           ) : (
             <button onClick={handleLogin} className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>
               <User size={18} />
-              <span>Login</span>
+              <span style={{ opacity: 0.7, fontWeight: 400 }}>Username</span>
             </button>
           )}
         </div>
       </div>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </header>
   );
 };

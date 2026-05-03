@@ -11,7 +11,7 @@ const Prescription = () => {
   
   // Form fields
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+91 ');
   const [address, setAddress] = useState('');
   
   // Past prescriptions
@@ -69,6 +69,15 @@ const Prescription = () => {
       setFile(selectedFile);
       setUsedPast(false);
     }
+  };
+
+  const handlePhoneChange = (e) => {
+    let val = e.target.value;
+    // Ensure it always starts with +91 
+    if (!val.startsWith('+91 ')) {
+      val = '+91 ' + val.replace(/^\+?9?1?\s*/, '');
+    }
+    setPhone(val);
   };
 
   const handleUpload = (e) => {
@@ -209,7 +218,7 @@ const Prescription = () => {
                     </div>
                     <div className="input-group">
                       <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={16}/> Phone Number</label>
-                      <input type="tel" className="input-field" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="+1 234 567 890" />
+                      <input type="tel" className="input-field" value={phone} onChange={handlePhoneChange} required placeholder="+91 98765 43210" />
                     </div>
                     <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                       <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={16}/> Delivery Address</label>

@@ -2,6 +2,7 @@ import { Routes, Route, Link } from 'react-router-dom';
 import { Pill } from 'lucide-react';
 import './App.css';
 import Header from './components/Header';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Medicines from './pages/Medicines';
 import Prescription from './pages/Prescription';
@@ -19,6 +20,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <ScrollToTop />
       <Header />
 
       <main className="main-content">
