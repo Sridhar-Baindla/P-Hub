@@ -231,3 +231,9 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .medicine-grid {
+    grid-template-columns: 1fr;
+  }
+}

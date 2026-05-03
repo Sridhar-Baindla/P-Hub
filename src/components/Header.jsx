@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Pill, ShoppingCart, User, Search, Bell, X, LogOut, Check } from 'lucide-react';
+import { Pill, ShoppingCart, User, Search, Bell, X, LogOut, Check, Menu } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import AuthModal from './AuthModal';
 
@@ -14,6 +14,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -81,17 +82,21 @@ const Header = () => {
           P-Hub
         </Link>
         
-        <nav className="nav-links">
-          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
-          <Link to="/about" className={`nav-link ${location.pathname.startsWith('/about') ? 'active' : ''}`}>About Us</Link>
-          <Link to="/medicines" className={`nav-link ${location.pathname.startsWith('/medicines') ? 'active' : ''}`}>Medicines</Link>
-          <Link to="/prescription" className={`nav-link ${location.pathname.startsWith('/prescription') ? 'active' : ''}`}>Upload Prescription</Link>
+        <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/about" className={`nav-link ${location.pathname.startsWith('/about') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+          <Link to="/medicines" className={`nav-link ${location.pathname.startsWith('/medicines') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Medicines</Link>
+          <Link to="/prescription" className={`nav-link ${location.pathname.startsWith('/prescription') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Upload Prescription</Link>
           {user && user.role === 'admin' && (
-            <Link to="/admin" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}>Admin Panel</Link>
+            <Link to="/admin" className={`nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Admin Panel</Link>
           )}
         </nav>
         
         <div className="nav-actions">
+          <button className="icon-btn mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          
           {/* Search */}
           <div className="icon-wrapper">
             <button className="icon-btn" aria-label="Search" onClick={() => setShowSearch(!showSearch)}>

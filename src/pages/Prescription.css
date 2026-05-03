@@ -109,3 +109,15 @@
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
+
+@media (max-width: 768px) {
+  .prescription-header h1 {
+    font-size: 2rem;
+  }
+  .upload-area {
+    padding: 2rem 1rem;
+  }
+  .prescription-container {
+    padding: 2rem 1rem;
+  }
+}
