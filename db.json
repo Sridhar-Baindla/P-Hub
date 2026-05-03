@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "password": "password123",
+      "role": "admin"
+    }
+  ],
+  "medicines": [
+    {
+      "id": 1,
+      "name": "Paracetamol 500mg",
+      "description": "Fever and pain relief",
+      "price": 5.99,
+      "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      "category": "Pain Relief",
+      "inStock": true
+    },
+    {
+      "id": 2,
+      "name": "Vitamin C 1000mg",
+      "description": "Immunity booster",
+      "price": 12.99,
+      "image": "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      "category": "Supplements",
+      "inStock": true
+    },
+    {
+      "id": 3,
+      "name": "Amoxicillin 250mg",
+      "description": "Antibiotic",
+      "price": 15.5,
+      "image": "https://images.unsplash.com/photo-1550572017-edb9b9409823?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+      "category": "Antibiotics",
+      "inStock": true
+    }
+  ],
+  "cart": [
+    {
+      "id": 1,
+      "userId": 1,
+      "medicineId": 1,
+      "quantity": 2
+    }
+  ],
+  "notifications": [
+    {
+      "id": 1,
+      "userId": 1,
+      "message": "Welcome to P-Hub!",
+      "read": true,
+      "createdAt": "2026-05-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "message": "Your order #1234 has been shipped.",
+      "read": true,
+      "createdAt": "2026-05-02T09:00:00Z"
+    }
+  ]
+}
