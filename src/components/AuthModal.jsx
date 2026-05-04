@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import { API_URL } from '../config';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const { login } = useContext(AppContext);
@@ -37,7 +38,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     try {
       if (isLoginView) {
         // Login Flow
-        const response = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        const response = await fetch(`${API_URL}/users?email=${formData.email}`);
         if (!response.ok) throw new Error('Network response was not ok');
         const users = await response.json();
 
@@ -61,7 +62,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         }
 
         // Check if user already exists
-        const checkRes = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        const checkRes = await fetch(`${API_URL}/users?email=${formData.email}`);
         if (!checkRes.ok) throw new Error('Network response was not ok');
         const existingUsers = await checkRes.json();
 
@@ -78,7 +79,7 @@ const AuthModal = ({ isOpen, onClose }) => {
           role: 'user'
         };
 
-        const response = await fetch('http://localhost:5000/users', {
+        const response = await fetch(`${API_URL}/users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

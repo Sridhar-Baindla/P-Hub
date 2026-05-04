@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 export const AppContext = createContext();
 
@@ -14,7 +15,7 @@ export const AppProvider = ({ children }) => {
   }, [user]);
 
   const fetchCartCount = () => {
-    fetch('http://localhost:5000/cart')
+    fetch(`${API_URL}/cart`)
       .then(res => res.json())
       .then(data => {
         const count = data.reduce((acc, item) => acc + item.quantity, 0);
