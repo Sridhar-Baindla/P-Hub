@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import './Warehouse.css';
 
+import { API_URL } from '../config';
+
 const WarehouseLogin = () => {
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -15,7 +17,7 @@ const WarehouseLogin = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
+      const res = await fetch(`${API_URL}/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
       const admins = await res.json();
       if (admins.length > 0) {
         const admin = admins[0];

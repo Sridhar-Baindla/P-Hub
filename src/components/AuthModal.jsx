@@ -94,7 +94,7 @@ const AuthModal = ({ isOpen, onClose }) => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setErrorMsg('Invalid details. Please try again.');
+      setErrorMsg('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { UploadCloud, FileText, CheckCircle, Clock, AlertCircle, User, Phone, MapPin, Search } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Prescription.css';
+import { API_URL } from '../config';
 
 const Prescription = () => {
   const { user } = useContext(AppContext);
@@ -22,7 +23,7 @@ const Prescription = () => {
   useEffect(() => {
     if (user) {
       setName(user.name || '');
-      fetch(`http://localhost:5000/prescriptions?userId=${user.id}`)
+      fetch(`${API_URL}/prescriptions?userId=${user.id}`)
         .then(res => res.json())
         .then(data => setPastPrescriptions(data))
         .catch(err => console.error(err));
@@ -105,7 +106,7 @@ const Prescription = () => {
     };
 
     setTimeout(() => {
-      fetch('http://localhost:5000/prescriptions', {
+      fetch(`${API_URL}/prescriptions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(prescriptionData)

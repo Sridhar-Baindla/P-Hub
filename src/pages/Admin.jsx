@@ -16,6 +16,7 @@ import {
   Users
 } from 'lucide-react';
 import './Admin.css';
+import { API_URL } from '../config';
 
 // Initial Mock Data
 const INITIAL_INVENTORY = [
@@ -30,16 +31,17 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('inventory');
   const [inventory, setInventory] = useState(INITIAL_INVENTORY);
   const [managers, setManagers] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
   
   useEffect(() => {
     if (activeTab === 'prescriptions') {
-      fetch('http://localhost:5000/prescriptions')
+      fetch(`${API_URL}/prescriptions`)
         .then(res => res.json())
         .then(data => setPrescriptions(data))
         .catch(err => console.error(err));
     }
     if (activeTab === 'managers') {
-      fetch('http://localhost:5000/warehouseAdmins')
+      fetch(`${API_URL}/warehouseAdmins`)
         .then(res => res.json())
         .then(data => setManagers(data))
         .catch(err => console.error(err));
@@ -255,7 +257,7 @@ const Admin = () => {
                 const location = prompt("Location (e.g. Miyapur):");
                 
                 if (name && email && password && location) {
-                  fetch('http://localhost:5000/warehouseAdmins', {
+                  fetch(`${API_URL}/warehouseAdmins`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password, location })
@@ -288,7 +290,7 @@ const Admin = () => {
                         <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
                            <button className="action-btn delete" onClick={() => {
                              if(window.confirm('Remove this manager?')) {
-                               fetch(`http://localhost:5000/warehouseAdmins/${m.id}`, { method: 'DELETE' })
+                               fetch(`${API_URL}/warehouseAdmins/${m.id}`, { method: 'DELETE' })
                                  .then(() => setActiveTab('managers'));
                              }
                            }}><Trash2 size={18} /></button>

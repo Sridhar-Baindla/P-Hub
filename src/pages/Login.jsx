@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Login = () => {
   const { login } = useContext(AppContext);
@@ -41,7 +42,7 @@ const Login = () => {
         }
 
         // 2. Check Customers
-        const userRes = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        const userRes = await fetch(`${API_URL}/users?email=${formData.email}`);
         const users = await userRes.json();
 
         if (users.length > 0) {
@@ -58,7 +59,7 @@ const Login = () => {
         }
 
         // 3. Check Warehouse Managers
-        const warehouseRes = await fetch(`http://localhost:5000/warehouseAdmins?email=${formData.email}`);
+        const warehouseRes = await fetch(`${API_URL}/warehouseAdmins?email=${formData.email}`);
         const admins = await warehouseRes.json();
 
         if (admins.length > 0) {
@@ -85,7 +86,7 @@ const Login = () => {
           return;
         }
 
-        const checkRes = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        const checkRes = await fetch(`${API_URL}/users?email=${formData.email}`);
         const existingUsers = await checkRes.json();
 
         if (existingUsers.length > 0) {
@@ -94,7 +95,7 @@ const Login = () => {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/users', {
+        const response = await fetch(`${API_URL}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...formData, role: 'user' })
@@ -105,6 +106,7 @@ const Login = () => {
         navigate('/');
       }
     } catch (error) {
+      console.error('Auth error:', error);
       setErrorMsg('An error occurred. Please try again.');
     } finally {
       setLoading(false);

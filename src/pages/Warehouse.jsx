@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Package, MapPin, LogOut, Check, Save, ArrowLeft, Plus, X, Edit2, UploadCloud } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Warehouse.css';
+import { API_URL } from '../config';
 
 const Warehouse = () => {
   const { user, login, logout } = useContext(AppContext);
@@ -41,7 +42,7 @@ const Warehouse = () => {
 
   const fetchMedicines = async () => {
     try {
-      const res = await fetch('http://localhost:5000/medicines');
+      const res = await fetch(`${API_URL}/medicines`);
       const data = await res.json();
       setMedicines(data);
     } catch (err) {
@@ -52,7 +53,7 @@ const Warehouse = () => {
   const fetchStock = async (location) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/stock?location=${location}`);
+      const res = await fetch(`${API_URL}/stock?location=${location}`);
       const data = await res.json();
       setStock(data);
     } catch (err) {
@@ -67,7 +68,7 @@ const Warehouse = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
+      const res = await fetch(`${API_URL}/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
       const admins = await res.json();
       if (admins.length > 0) {
         const admin = admins[0];
@@ -92,7 +93,7 @@ const Warehouse = () => {
 
   const handleUpdateStock = async (stockId, newQuantity) => {
     try {
-      await fetch(`http://localhost:5000/stock/${stockId}`, {
+      await fetch(`${API_URL}/stock/${stockId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: parseInt(newQuantity) })
@@ -111,7 +112,7 @@ const Warehouse = () => {
     try {
       if (editingStock) {
         // Update existing medicine
-        await fetch(`http://localhost:5000/medicines/${editingStock.medicineId}`, {
+        await fetch(`${API_URL}/medicines/${editingStock.medicineId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -127,7 +128,7 @@ const Warehouse = () => {
         });
 
         // Update existing stock quantity
-        await fetch(`http://localhost:5000/stock/${editingStock.id}`, {
+        await fetch(`${API_URL}/stock/${editingStock.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -138,7 +139,7 @@ const Warehouse = () => {
         setUpdateMsg('Stock details updated!');
       } else {
         // Create new medicine
-        const medResponse = await fetch('http://localhost:5000/medicines', {
+        const medResponse = await fetch(`${API_URL}/medicines`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -156,7 +157,7 @@ const Warehouse = () => {
         const savedMed = await medResponse.json();
 
         // Create new stock entry
-        await fetch('http://localhost:5000/stock', {
+        await fetch(`${API_URL}/stock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

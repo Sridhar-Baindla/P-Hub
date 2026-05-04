@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { ShoppingCart, ArrowRight, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import { API_URL } from '../config';
 
 const Cart = () => {
   const { user, fetchCartCount } = useContext(AppContext);
@@ -17,7 +18,7 @@ const Cart = () => {
   }, [user]);
 
   const fetchCart = () => {
-    fetch(`http://localhost:5000/cart?_expand=medicine&userId=${user.id}`)
+    fetch(`${API_URL}/cart?_expand=medicine&userId=${user.id}`)
       .then(res => res.json())
       .then(data => {
         setCartItems(data);
@@ -33,7 +34,7 @@ const Cart = () => {
     const newQty = currentQty + delta;
     if (newQty < 1) return;
     
-    await fetch(`http://localhost:5000/cart/${id}`, {
+    await fetch(`${API_URL}/cart/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity: newQty })
@@ -43,7 +44,7 @@ const Cart = () => {
   };
 
   const handleRemove = async (id) => {
-    await fetch(`http://localhost:5000/cart/${id}`, {
+    await fetch(`${API_URL}/cart/${id}`, {
       method: 'DELETE'
     });
     fetchCart();

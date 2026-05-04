@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, Filter, Plus, Check } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Medicines.css';
+import { API_URL } from '../config';
 
 const CATEGORIES = ['All', 'Pain Relief', 'Antibiotics', 'Supplements', 'Allergy', 'Digestion', 'Heart Health'];
 
@@ -19,8 +20,8 @@ const Medicines = () => {
     const fetchData = async () => {
       try {
         const [medRes, stockRes] = await Promise.all([
-          fetch('http://localhost:5000/medicines'),
-          fetch('http://localhost:5000/stock')
+          fetch(`${API_URL}/medicines`),
+          fetch(`${API_URL}/stock`)
         ]);
         
         const medData = await medRes.json();
@@ -58,7 +59,7 @@ const Medicines = () => {
 
     try {
       // 1. Check and decrement stock
-      const stockRes = await fetch(`http://localhost:5000/stock?medicineId=${med.id}`);
+      const stockRes = await fetch(`${API_URL}/stock?medicineId=${med.id}`);
       const stockEntries = await stockRes.json();
       
       // Find the first location that has stock
@@ -70,27 +71,27 @@ const Medicines = () => {
       }
 
       // Decrement stock at that location
-      await fetch(`http://localhost:5000/stock/${availableStock.id}`, {
+      await fetch(`${API_URL}/stock/${availableStock.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: availableStock.quantity - 1 })
       });
 
       // 2. Add to cart (existing logic)
-      const cartRes = await fetch(`http://localhost:5000/cart?userId=${user.id}&medicineId=${med.id}`);
+      const cartRes = await fetch(`${API_URL}/cart?userId=${user.id}&medicineId=${med.id}`);
       const cartItems = await cartRes.json();
 
       if (cartItems.length > 0) {
         // Update quantity
         const cartItem = cartItems[0];
-        await fetch(`http://localhost:5000/cart/${cartItem.id}`, {
+        await fetch(`${API_URL}/cart/${cartItem.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ quantity: cartItem.quantity + 1 })
         });
       } else {
         // Add new item
-        await fetch('http://localhost:5000/cart', {
+        await fetch(`${API_URL}/cart`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

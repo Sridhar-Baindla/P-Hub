@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Pill, ShoppingCart, User, Search, Bell, X, LogOut, Check, Menu } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import AuthModal from './AuthModal';
+import logoImg from '../assets/logo.png';
+import { API_URL } from '../config';
 
 const Header = () => {
   const { user, login, logout, cartCount } = useContext(AppContext);
@@ -19,7 +21,7 @@ const Header = () => {
   useEffect(() => {
     // Fetch notifications
     if (user) {
-      fetch(`http://localhost:5000/notifications?userId=${user.id}`)
+      fetch(`${API_URL}/notifications?userId=${user.id}`)
         .then(res => res.json())
         .then(data => setNotifications(data))
         .catch(err => console.error(err));
@@ -30,7 +32,7 @@ const Header = () => {
     const query = e.target.value;
     setSearchQuery(query);
     if (query.length > 2) {
-      fetch(`http://localhost:5000/medicines?name_like=${query}`)
+      fetch(`${API_URL}/medicines?name_like=${query}`)
         .then(res => res.json())
         .then(data => setSearchResults(data));
     } else {
@@ -39,7 +41,7 @@ const Header = () => {
   };
 
   const markAsRead = (id) => {
-    fetch(`http://localhost:5000/notifications/${id}`, {
+    fetch(`${API_URL}/notifications/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ read: true })
@@ -51,7 +53,7 @@ const Header = () => {
   const markAllAsRead = () => {
     const unread = notifications.filter(n => !n.read);
     Promise.all(unread.map(n =>
-      fetch(`http://localhost:5000/notifications/${n.id}`, {
+      fetch(`${API_URL}/notifications/${n.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ read: true })
@@ -77,7 +79,7 @@ const Header = () => {
     <header className="navbar">
       <div className="container nav-content relative">
         <Link to="/" className="logo">
-          <img src="../src/assets/logo.png" alt="P-Hub Logo" style={{ height: '40px', width: 'auto' }} />
+          <img src={logoImg} alt="P-Hub Logo" style={{ height: '40px', width: 'auto' }} />
           P-Hub
         </Link>
 
