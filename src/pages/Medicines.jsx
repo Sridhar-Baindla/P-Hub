@@ -8,28 +8,46 @@ const CATEGORIES = ['All', 'Pain Relief', 'Antibiotics', 'Supplements', 'Allergy
 const Medicines = () => {
   const { user, fetchCartCount } = useContext(AppContext);
   const [medicines, setMedicines] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [addedItems, setAddedItems] = useState({});
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  const [stockLevels, setStockLevels] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/medicines')
-      .then(res => res.json())
-      .then(data => {
-        setMedicines(data);
+    const fetchData = async () => {
+      try {
+        const [medRes, stockRes] = await Promise.all([
+          fetch('http://localhost:5000/medicines'),
+          fetch('http://localhost:5000/stock')
+        ]);
+        
+        const medData = await medRes.json();
+        const stockData = await stockRes.json();
+        
+        setMedicines(medData);
+        setStockLevels(stockData);
         setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchData();
   }, []);
 
+  const getStockCount = (medicineId) => {
+    return stockLevels
+      .filter(s => s.medicineId === medicineId)
+      .reduce((acc, curr) => acc + curr.quantity, 0);
+  };
+
   const filteredMedicines = medicines.filter(med => {
-    const matchesCategory = activeCategory === 'All' || med.category === activeCategory;
     const matchesSearch = med.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesCategory = activeCategory === 'All' || med.category === activeCategory;
+    return matchesSearch && matchesCategory;
   });
 
   const handleAddToCart = async (med) => {
@@ -39,7 +57,26 @@ const Medicines = () => {
     }
 
     try {
-      // Check if already in cart
+      // 1. Check and decrement stock
+      const stockRes = await fetch(`http://localhost:5000/stock?medicineId=${med.id}`);
+      const stockEntries = await stockRes.json();
+      
+      // Find the first location that has stock
+      const availableStock = stockEntries.find(s => s.quantity > 0);
+
+      if (!availableStock) {
+        alert("Sorry, this medicine is currently out of stock in all locations.");
+        return;
+      }
+
+      // Decrement stock at that location
+      await fetch(`http://localhost:5000/stock/${availableStock.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: availableStock.quantity - 1 })
+      });
+
+      // 2. Add to cart (existing logic)
       const cartRes = await fetch(`http://localhost:5000/cart?userId=${user.id}&medicineId=${med.id}`);
       const cartItems = await cartRes.json();
 
@@ -71,63 +108,16 @@ const Medicines = () => {
       }, 2000);
     } catch (err) {
       console.error(err);
+      alert("An error occurred while adding to cart.");
     }
   };
-
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading medicines...</div>;
   }
 
   return (
-    <div className="container catalog-container">
-      {/* Mobile Filter Toggle */}
-      <button 
-        className="mobile-filter-toggle btn btn-secondary" 
-        onClick={() => setShowMobileFilters(!showMobileFilters)}
-      >
-        <Filter size={18} /> {showMobileFilters ? 'Hide Filters' : 'Show Filters'}
-      </button>
-
-      {/* Sidebar */}
-      <aside className={`filters-sidebar ${showMobileFilters ? 'mobile-show' : ''}`}>
-        <div className="filter-section">
-          <h3>Categories <Filter size={18} className="hide-desktop" onClick={() => setShowMobileFilters(false)} /></h3>
-          <div className="filter-list">
-            {CATEGORIES.map(category => (
-              <div 
-                key={category} 
-                className={`filter-item ${activeCategory === category ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveCategory(category);
-                  if (window.innerWidth <= 992) setShowMobileFilters(false);
-                }}
-              >
-                <div className="filter-checkbox">
-                  {activeCategory === category && <Check size={14} />}
-                </div>
-                <span>{category}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="filter-section">
-          <h3>Prescription</h3>
-          <div className="filter-list">
-            <div className="filter-item">
-              <div className="filter-checkbox"></div>
-              <span>Rx Required</span>
-            </div>
-            <div className="filter-item">
-              <div className="filter-checkbox"></div>
-              <span>Over the Counter (OTC)</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
+    <div className="container catalog-container no-sidebar">
       {/* Main Content */}
       <main className="catalog-main">
         <div className="catalog-header">
@@ -141,49 +131,94 @@ const Medicines = () => {
             />
           </div>
           
-          <select className="sort-select">
-            <option>Sort by: Popularity</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-            <option>Name: A to Z</option>
-          </select>
+          <div className="category-filters" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.5rem 0', scrollbarWidth: 'none' }}>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                className={`filter-btn ${activeCategory === cat ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat)}
+                style={{ 
+                  padding: '0.5rem 1rem', 
+                  borderRadius: 'var(--radius-full)', 
+                  border: '1px solid var(--border)',
+                  background: activeCategory === cat ? 'var(--primary)' : 'var(--surface)',
+                  color: activeCategory === cat ? 'white' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="medicine-grid">
-          {filteredMedicines.map(med => (
-            <div key={med.id} className="medicine-card">
-              {med.rxRequired && (
-                <div className="medicine-badge badge badge-success" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
-                  Rx Required
+          {filteredMedicines.map(med => {
+            const totalStock = getStockCount(med.id);
+            const isOutOfStock = totalStock === 0;
+
+            return (
+              <div key={med.id} className={`medicine-card ${isOutOfStock ? 'out-of-stock' : ''}`}>
+                {med.rxRequired && (
+                  <div className="medicine-badge badge badge-success" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                    Rx Required
+                  </div>
+                )}
+                
+                <div className="medicine-image-container">
+                  <img src={med.image} alt={med.name} className="medicine-image" />
+                  {isOutOfStock && (
+                    <div className="out-of-stock-overlay">Out of Stock</div>
+                  )}
                 </div>
-              )}
-              
-              <div className="medicine-image-container">
-                <img src={med.image} alt={med.name} className="medicine-image" />
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span className="medicine-category">{med.category}</span>
+                  <span className={`stock-status ${isOutOfStock ? 'text-danger' : 'text-success'}`}>
+                    {isOutOfStock ? 'Out of Stock' : `${totalStock} units available`}
+                  </span>
+                </div>
+
+                <h4 className="medicine-name">{med.name}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                  <span>{med.manufacturer}</span>
+                  {med.expiryDate && (
+                    <span style={{ color: 'var(--danger)', fontWeight: 500 }}>
+                      Exp: {new Date(med.expiryDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="medicine-footer">
+                  <div className="price-container" style={{ display: 'flex', flexDirection: 'column' }}>
+                    {med.discountedPrice ? (
+                      <>
+                        <span className="medicine-price" style={{ color: 'var(--primary)', fontWeight: 700 }}>₹{parseFloat(med.discountedPrice).toFixed(2)}</span>
+                        <span className="original-price" style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>₹{parseFloat(med.price).toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <span className="medicine-price">₹{(med.price || 0).toFixed(2)}</span>
+                    )}
+                  </div>
+                  <button 
+                    className="add-to-cart-btn" 
+                    onClick={() => handleAddToCart(med)}
+                    aria-label="Add to cart"
+                    disabled={isOutOfStock}
+                  >
+                    {addedItems[med.id] ? <Check size={20} /> : <Plus size={20} />}
+                  </button>
+                </div>
               </div>
-              
-              <span className="medicine-category">{med.category}</span>
-              <h4 className="medicine-name">{med.name}</h4>
-              <span className="medicine-manufacturer">{med.manufacturer}</span>
-              
-              <div className="medicine-footer">
-                <span className="medicine-price">${med.price.toFixed(2)}</span>
-                <button 
-                  className="add-to-cart-btn" 
-                  onClick={() => handleAddToCart(med)}
-                  aria-label="Add to cart"
-                >
-                  {addedItems[med.id] ? <Check size={20} /> : <Plus size={20} />}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredMedicines.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-secondary)' }}>
             <h3>No medicines found</h3>
-            <p>Try adjusting your search or filters</p>
+            <p>Try adjusting your search query</p>
           </div>
         )}
       </main>

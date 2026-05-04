@@ -13,6 +13,8 @@ const AuthModal = ({ isOpen, onClose }) => {
     password: ''
   });
 
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen) return null;
 
   const handleChange = (e) => {
@@ -22,14 +24,21 @@ const AuthModal = ({ isOpen, onClose }) => {
     });
   };
 
+  const validatePassword = (password) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setLoading(true);
 
     try {
       if (isLoginView) {
         // Login Flow
         const response = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        if (!response.ok) throw new Error('Network response was not ok');
         const users = await response.json();
 
         if (users.length > 0) {
@@ -38,19 +47,27 @@ const AuthModal = ({ isOpen, onClose }) => {
             login(user);
             onClose();
           } else {
-            setErrorMsg('Invalid details. Please check your email and password.');
+            setErrorMsg('Invalid details. Please check your password.');
           }
         } else {
           setErrorMsg('Invalid details. User not found.');
         }
       } else {
         // Signup Flow
+        if (!validatePassword(formData.password)) {
+          setErrorMsg('Password must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.');
+          setLoading(false);
+          return;
+        }
+
         // Check if user already exists
         const checkRes = await fetch(`http://localhost:5000/users?email=${formData.email}`);
+        if (!checkRes.ok) throw new Error('Network response was not ok');
         const existingUsers = await checkRes.json();
 
         if (existingUsers.length > 0) {
           setErrorMsg('User with this email already exists.');
+          setLoading(false);
           return;
         }
 
@@ -69,13 +86,17 @@ const AuthModal = ({ isOpen, onClose }) => {
           body: JSON.stringify(newUser)
         });
 
+        if (!response.ok) throw new Error('Failed to create account');
+
         const savedUser = await response.json();
         login(savedUser);
         onClose();
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setErrorMsg('An error occurred. Please try again.');
+      setErrorMsg('Invalid details. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -138,8 +159,8 @@ const AuthModal = ({ isOpen, onClose }) => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '0.5rem' }}>
-            {isLoginView ? 'Log In' : 'Sign Up'}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '0.5rem' }} disabled={loading}>
+            {loading ? 'Processing...' : (isLoginView ? 'Log In' : 'Sign Up')}
           </button>
         </form>
 

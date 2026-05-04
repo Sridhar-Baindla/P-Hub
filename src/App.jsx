@@ -16,6 +16,9 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Returns from './pages/Returns';
 import Warehouse from './pages/Warehouse';
+import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin';
+import WarehouseLogin from './pages/WarehouseLogin';
 
 function App() {
 
@@ -31,8 +34,11 @@ function App() {
           <Route path="/prescription" element={<Prescription />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/warehouse" element={<Warehouse />} />
+          <Route path="/warehouse/login" element={<WarehouseLogin />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />

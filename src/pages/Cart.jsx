@@ -90,7 +90,7 @@ const Cart = () => {
                   <img src={item.medicine.image} alt={item.medicine.name} className="cart-item-image" />
                   <div className="cart-item-info">
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{item.medicine.name}</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>${item.medicine.price.toFixed(2)}</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>₹{item.medicine.price.toFixed(2)}</p>
                   </div>
                   <div className="cart-item-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--background)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
@@ -99,7 +99,7 @@ const Cart = () => {
                       <button onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
                     </div>
                     <div style={{ fontWeight: 'bold', minWidth: '80px', textAlign: 'right' }}>
-                      ${(item.medicine.price * item.quantity).toFixed(2)}
+                      ₹{(item.medicine.price * item.quantity).toFixed(2)}
                     </div>
                     <button onClick={() => handleRemove(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.5rem' }}>
                       <Trash2 size={20} />
@@ -115,15 +115,15 @@ const Cart = () => {
           <h3 style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>Order Summary</h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>₹{subtotal.toFixed(2)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Delivery Fee</span>
-            <span>${deliveryFee.toFixed(2)}</span>
+            <span>₹{deliveryFee.toFixed(2)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', fontWeight: 700, fontSize: '1.125rem' }}>
             <span>Total</span>
-            <span style={{ color: 'var(--primary)' }}>${total.toFixed(2)}</span>
+            <span style={{ color: 'var(--primary)' }}>₹{total.toFixed(2)}</span>
           </div>
           
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={cartItems.length === 0}>

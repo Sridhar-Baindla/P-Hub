@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Navigate } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 import { 
   LayoutDashboard, 
   Package, 
@@ -10,7 +12,8 @@ import {
   Trash2, 
   X,
   UploadCloud,
-  Lock
+  Lock,
+  Users
 } from 'lucide-react';
 import './Admin.css';
 
@@ -23,12 +26,10 @@ const INITIAL_INVENTORY = [
 ];
 
 const Admin = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  
+  const { user } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('inventory');
   const [inventory, setInventory] = useState(INITIAL_INVENTORY);
-  const [prescriptions, setPrescriptions] = useState([]);
+  const [managers, setManagers] = useState([]);
   
   useEffect(() => {
     if (activeTab === 'prescriptions') {
@@ -37,18 +38,15 @@ const Admin = () => {
         .then(data => setPrescriptions(data))
         .catch(err => console.error(err));
     }
+    if (activeTab === 'managers') {
+      fetch('http://localhost:5000/warehouseAdmins')
+        .then(res => res.json())
+        .then(data => setManagers(data))
+        .catch(err => console.error(err));
+    }
   }, [activeTab]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (password === 'admin123') { // Simple demo auth
-      setIsAuthenticated(true);
-    } else {
-      alert('Invalid admin credentials. Hint: use admin123');
-    }
-  };
 
   const handleOpenModal = (item = null) => {
     setEditingItem(item);
@@ -81,31 +79,8 @@ const Admin = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container">
-        <div className="auth-guard">
-          <div style={{ width: '64px', height: '64px', background: 'rgba(30, 58, 138, 0.1)', color: 'var(--secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-            <Lock size={32} />
-          </div>
-          <h2 style={{ marginBottom: '0.5rem' }}>Secure Admin Access</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Authorized personnel only.</p>
-          <form onSubmit={handleLogin}>
-            <input 
-              type="password" 
-              className="input-field" 
-              placeholder="Admin Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              Access Dashboard
-            </button>
-          </form>
-        </div>
-      </div>
-    );
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (
@@ -135,6 +110,12 @@ const Admin = () => {
           onClick={() => setActiveTab('prescriptions')}
         >
           <FileText size={20} /> Prescriptions
+        </div>
+        <div 
+          className={`admin-nav-item ${activeTab === 'managers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('managers')}
+        >
+          <Users size={20} /> Store Managers
         </div>
         <div className="admin-nav-item" style={{ marginTop: 'auto' }}>
           <Settings size={20} /> Settings
@@ -172,7 +153,7 @@ const Admin = () => {
                     <tr key={item.id}>
                       <td style={{ fontWeight: 500 }}>{item.name}</td>
                       <td>{item.category}</td>
-                      <td>${item.price.toFixed(2)}</td>
+                      <td>₹{item.price.toFixed(2)}</td>
                       <td>{item.stock} units</td>
                       <td>
                         <span className={`badge ${item.status === 'In Stock' ? 'badge-success' : item.status === 'Low Stock' ? '' : ''}`} 
@@ -260,11 +241,65 @@ const Admin = () => {
           </>
         )}
 
-        {activeTab !== 'inventory' && activeTab !== 'prescriptions' && (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h2>
-            <p>This module is functioning properly but UI is simplified for demo purposes. Focus is on Inventory Management.</p>
-          </div>
+        {activeTab === 'managers' && (
+          <>
+            <div className="admin-header">
+              <div>
+                <h1>Store Manager Management</h1>
+                <p style={{ color: 'var(--text-secondary)' }}>Register and manage warehouse manager credentials.</p>
+              </div>
+              <button className="btn btn-primary" onClick={() => {
+                const name = prompt("Manager Name:");
+                const email = prompt("Manager Email:");
+                const password = prompt("Manager Password:");
+                const location = prompt("Location (e.g. Miyapur):");
+                
+                if (name && email && password && location) {
+                  fetch('http://localhost:5000/warehouseAdmins', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, location })
+                  }).then(() => setActiveTab('managers'));
+                }
+              }}>
+                <Plus size={20} /> Create New Manager
+              </button>
+            </div>
+
+            <div className="data-table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Manager Name</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {managers.map(m => (
+                    <tr key={m.id}>
+                      <td style={{ fontWeight: 500 }}>{m.name}</td>
+                      <td>{m.email}</td>
+                      <td>{m.location}</td>
+                      <td><span className="badge badge-success">Active</span></td>
+                      <td>
+                        <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                           <button className="action-btn delete" onClick={() => {
+                             if(window.confirm('Remove this manager?')) {
+                               fetch(`http://localhost:5000/warehouseAdmins/${m.id}`, { method: 'DELETE' })
+                                 .then(() => setActiveTab('managers'));
+                             }
+                           }}><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </main>
 
@@ -299,7 +334,7 @@ const Admin = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                   <div className="input-group">
-                    <label className="input-label">Price ($)</label>
+                    <label className="input-label">Price (₹)</label>
                     <input type="number" name="price" step="0.01" className="input-field" defaultValue={editingItem?.price} required />
                   </div>
                   <div className="input-group">
