@@ -83,6 +83,11 @@ const Header = () => {
         </Link>
 
         <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          {mobileMenuOpen && (
+            <button className="icon-btn mobile-close-btn" onClick={() => setMobileMenuOpen(false)} style={{ position: 'absolute', top: '2rem', right: '2rem' }}>
+              <X size={32} />
+            </button>
+          )}
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
           <Link to="/about" className={`nav-link ${location.pathname.startsWith('/about') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>About Us</Link>
           <Link to="/medicines" className={`nav-link ${location.pathname.startsWith('/medicines') ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Medicines</Link>

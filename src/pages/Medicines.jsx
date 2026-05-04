@@ -74,22 +74,35 @@ const Medicines = () => {
     }
   };
 
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading medicines...</div>;
   }
 
   return (
     <div className="container catalog-container">
+      {/* Mobile Filter Toggle */}
+      <button 
+        className="mobile-filter-toggle btn btn-secondary" 
+        onClick={() => setShowMobileFilters(!showMobileFilters)}
+      >
+        <Filter size={18} /> {showMobileFilters ? 'Hide Filters' : 'Show Filters'}
+      </button>
+
       {/* Sidebar */}
-      <aside className="filters-sidebar">
+      <aside className={`filters-sidebar ${showMobileFilters ? 'mobile-show' : ''}`}>
         <div className="filter-section">
-          <h3>Categories <Filter size={18} /></h3>
+          <h3>Categories <Filter size={18} className="hide-desktop" onClick={() => setShowMobileFilters(false)} /></h3>
           <div className="filter-list">
             {CATEGORIES.map(category => (
               <div 
                 key={category} 
                 className={`filter-item ${activeCategory === category ? 'active' : ''}`}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => {
+                  setActiveCategory(category);
+                  if (window.innerWidth <= 992) setShowMobileFilters(false);
+                }}
               >
                 <div className="filter-checkbox">
                   {activeCategory === category && <Check size={14} />}

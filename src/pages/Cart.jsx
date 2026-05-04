@@ -86,23 +86,25 @@ const Cart = () => {
           ) : (
             <div>
               {cartItems.map(item => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid var(--border)' }}>
-                  <img src={item.medicine.image} alt={item.medicine.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
-                  <div style={{ flex: 1 }}>
+                <div key={item.id} className="cart-item">
+                  <img src={item.medicine.image} alt={item.medicine.name} className="cart-item-image" />
+                  <div className="cart-item-info">
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{item.medicine.name}</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>${item.medicine.price.toFixed(2)}</p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--background)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
-                    <button onClick={() => handleUpdateQuantity(item.id, item.quantity, -1)} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={14} /></button>
-                    <span style={{ width: '24px', textAlign: 'center', fontWeight: 'bold' }}>{item.quantity}</span>
-                    <button onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
+                  <div className="cart-item-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--background)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+                      <button onClick={() => handleUpdateQuantity(item.id, item.quantity, -1)} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={14} /></button>
+                      <span style={{ width: '24px', textAlign: 'center', fontWeight: 'bold' }}>{item.quantity}</span>
+                      <button onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
+                    </div>
+                    <div style={{ fontWeight: 'bold', minWidth: '80px', textAlign: 'right' }}>
+                      ${(item.medicine.price * item.quantity).toFixed(2)}
+                    </div>
+                    <button onClick={() => handleRemove(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.5rem' }}>
+                      <Trash2 size={20} />
+                    </button>
                   </div>
-                  <div style={{ fontWeight: 'bold', minWidth: '80px', textAlign: 'right' }}>
-                    ${(item.medicine.price * item.quantity).toFixed(2)}
-                  </div>
-                  <button onClick={() => handleRemove(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.5rem' }}>
-                    <Trash2 size={20} />
-                  </button>
                 </div>
               ))}
             </div>

@@ -222,17 +222,88 @@
 }
 
 /* Responsive */
+.mobile-filter-toggle {
+  display: none;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
 @media (max-width: 992px) {
   .catalog-container {
     flex-direction: column;
+    padding: 2rem 0;
   }
   
+  .mobile-filter-toggle {
+    display: flex;
+  }
+
   .filters-sidebar {
     width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    z-index: 1200;
+    padding: 2rem;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    margin-bottom: 0;
+  }
+
+  .filters-sidebar.mobile-show {
+    transform: translateX(0);
+  }
+
+  .catalog-header {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .medicine-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .medicine-card {
+    padding: 1rem;
+  }
+
+  .medicine-image-container {
+    height: 140px;
   }
 }
 
 @media (max-width: 480px) {
+  .medicine-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .medicine-name {
+    font-size: 1rem;
+  }
+
+  .medicine-price {
+    font-size: 1.1rem;
+  }
+
+  .add-to-cart-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 380px) {
   .medicine-grid {
     grid-template-columns: 1fr;
   }
