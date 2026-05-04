@@ -15,6 +15,7 @@ import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Returns from './pages/Returns';
+import Warehouse from './pages/Warehouse';
 
 function App() {
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/warehouse" element={<Warehouse />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />

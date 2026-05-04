@@ -1,0 +1,299 @@
+.warehouse-login-container {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: radial-gradient(circle at top right, rgba(249, 115, 22, 0.05), transparent),
+              radial-gradient(circle at bottom left, rgba(30, 58, 138, 0.05), transparent);
+}
+
+.warehouse-login-card {
+  background: var(--surface);
+  padding: 3rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.warehouse-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: rgba(249, 115, 22, 0.1);
+  color: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+.warehouse-login-card h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.warehouse-login-card p {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.warehouse-login-card .form-group {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.warehouse-login-card label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.warehouse-login-card input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.warehouse-login-card input:focus {
+  border-color: var(--primary);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+.error-msg {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+/* Dashboard Styles */
+.warehouse-dashboard {
+  background: var(--background);
+  min-height: 100vh;
+}
+
+.warehouse-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.store-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pin-icon {
+  color: var(--primary);
+}
+
+.store-info h2 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.store-info p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.logout-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.logout-link:hover {
+  color: var(--danger);
+}
+
+.warehouse-main {
+  padding-top: 3rem;
+  padding-bottom: 5rem;
+}
+
+.dashboard-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.dashboard-controls h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.success-badge {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.stock-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.stock-img-container {
+  height: 180px;
+  position: relative;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.stock-img-container img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.low-stock-pill {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--danger);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.stock-info {
+  padding: 1.5rem;
+}
+
+.stock-info h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.stock-info .category {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.quantity-manager label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.input-with-button {
+  display: flex;
+  align-items: center;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.input-with-button input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  width: 80px;
+  text-align: center;
+}
+
+.unit-label {
+  padding: 0 1rem;
+  background: var(--border);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 5rem 0;
+  color: var(--text-secondary);
+}
+
+.empty-state svg {
+  margin-bottom: 1.5rem;
+  opacity: 0.3;
+}
+
+@media (max-width: 768px) {
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .stock-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -15,6 +15,30 @@
       "id": 2
     }
   ],
+  "warehouseAdmins": [
+    {
+      "id": 1,
+      "name": "Miyapur Admin",
+      "email": "miyapur@phub.com",
+      "password": "admin-miyapur",
+      "location": "Miyapur"
+    },
+    {
+      "id": 2,
+      "name": "Kukatpally Admin",
+      "email": "kukatpally@phub.com",
+      "password": "admin-kukatpally",
+      "location": "Kukatpally"
+    }
+  ],
+  "stock": [
+    { "id": 1, "medicineId": 1, "location": "Miyapur", "quantity": 150 },
+    { "id": 2, "medicineId": 2, "location": "Miyapur", "quantity": 85 },
+    { "id": 3, "medicineId": 3, "location": "Miyapur", "quantity": 12 },
+    { "id": 4, "medicineId": 1, "location": "Kukatpally", "quantity": 75 },
+    { "id": 5, "medicineId": 2, "location": "Kukatpally", "quantity": 40 },
+    { "id": 6, "medicineId": 3, "location": "Kukatpally", "quantity": 0 }
+  ],
   "medicines": [
     {
       "id": 1,
@@ -67,5 +91,6 @@
       "read": true,
       "createdAt": "2026-05-02T09:00:00Z"
     }
-  ]
+  ],
+  "prescriptions": []
 }
