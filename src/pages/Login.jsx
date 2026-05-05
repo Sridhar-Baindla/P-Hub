@@ -111,7 +111,7 @@ const Login = () => {
     } catch (error) {
       console.error('Auth error:', error);
       setErrorMsg(error.message === 'Failed to fetch' 
-        ? 'Cannot connect to server. Please ensure the backend is running.' 
+        ? `Cannot connect to server at ${API_URL}. Please ensure the backend is running and accessible from this device.` 
         : 'An error occurred during authentication. Please try again.');
     } finally {
       setLoading(false);
