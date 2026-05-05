@@ -8,6 +8,11 @@ export const AppProvider = ({ children }) => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
+  
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem('token') || null;
+  });
+
   const [cartCount, setCartCount] = useState(0);
 
   const getDeviceId = () => {
@@ -21,14 +26,23 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     fetchCartCount();
-  }, [user]);
+  }, [user, token]);
 
   const fetchCartCount = () => {
-    fetch(`${API_URL}/cart`)
+    if (!token) {
+      setCartCount(0);
+      return;
+    }
+
+    fetch(`${API_URL}/cart`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
-        const count = data.reduce((acc, item) => acc + item.quantity, 0);
-        setCartCount(count);
+        if (Array.isArray(data)) {
+          const count = data.reduce((acc, item) => acc + item.quantity, 0);
+          setCartCount(count);
+        }
       })
       .catch(err => console.error(err));
   };
@@ -42,17 +56,17 @@ export const AppProvider = ({ children }) => {
       const deviceId = getDeviceId();
       const existingSession = sessions.find(s => s.deviceId === deviceId);
       
-      if (existingSession) return true; // Already logged in on this device
-      if (sessions.length >= 3) return false; // Limit reached
+      if (existingSession) return true; 
+      if (sessions.length >= 3) return false; 
       
       return true;
     } catch (error) {
       console.error('Error checking device limit:', error);
-      return true; // Default to allow if check fails (better UX, but maybe less secure)
+      return true; 
     }
   };
 
-  const login = async (userData) => {
+  const login = async (userData, userToken) => {
     const deviceId = getDeviceId();
     
     // Check if session already exists for this device
@@ -60,7 +74,6 @@ export const AppProvider = ({ children }) => {
     const sessions = await res.json();
     
     if (sessions.length === 0) {
-      // Add new session
       await fetch(`${API_URL}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +81,9 @@ export const AppProvider = ({ children }) => {
       });
     }
 
+    setToken(userToken);
     setUser(userData);
+    localStorage.setItem('token', userToken);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
@@ -85,12 +100,34 @@ export const AppProvider = ({ children }) => {
         console.error('Error removing session on logout:', error);
       }
     }
+    setToken(null);
     setUser(null);
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
+  const authenticatedFetch = (url, options = {}) => {
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  };
+
   return (
-    <AppContext.Provider value={{ user, login, logout, cartCount, fetchCartCount, checkDeviceLimit, getDeviceId }}>
+    <AppContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout, 
+      cartCount, 
+      fetchCartCount, 
+      checkDeviceLimit, 
+      getDeviceId,
+      authenticatedFetch 
+    }}>
       {children}
     </AppContext.Provider>
   );

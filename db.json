@@ -6,6 +6,13 @@
       "password": "Sridhar@5121",
       "role": "user",
       "id": 1
+    },
+    {
+      "name": "Sridhar",
+      "email": "sridharbaindlaa@gmail.com",
+      "password": "Sridhar@5121",
+      "role": "user",
+      "id": 2
     }
   ],
   "warehouseAdmins": [
@@ -22,19 +29,19 @@
       "id": 1,
       "medicineId": 1,
       "location": "Miyapur",
-      "quantity": 150
+      "quantity": 149
     },
     {
       "id": 2,
       "medicineId": 2,
       "location": "Miyapur",
-      "quantity": 100
+      "quantity": 97
     },
     {
       "id": 3,
       "medicineId": 3,
       "location": "Miyapur",
-      "quantity": 80
+      "quantity": 77
     },
     {
       "id": 4,
@@ -57,7 +64,7 @@
     {
       "medicineId": 4,
       "location": "Miyapur",
-      "quantity": 99,
+      "quantity": 98,
       "id": 7
     },
     {
@@ -201,7 +208,40 @@
     {
       "userId": 1,
       "deviceId": "x7xo15t8vff0tmd47rql1do",
-      "lastActive": "2026-05-05T07:20:24.926Z",
+      "lastActive": "2026-05-05T08:01:17.814Z",
+      "id": 1
+    }
+  ],
+  "orders": [
+    {
+      "userId": 1,
+      "items": [
+        {
+          "medicineId": 2,
+          "name": "Vitamin C 1000mg",
+          "price": 12.99,
+          "quantity": 3
+        },
+        {
+          "medicineId": 3,
+          "name": "Amoxicillin 250mg",
+          "price": 15.5,
+          "quantity": 1
+        },
+        {
+          "medicineId": 1,
+          "name": "Paracetamol 500mg",
+          "price": 5.99,
+          "quantity": 1
+        }
+      ],
+      "totalAmount": 110.46000000000001,
+      "shippingAddress": "yellareddy guda, hyderabad - 500082",
+      "contactNumber": "6302349535",
+      "paymentMethod": "PhonePe",
+      "paymentStatus": "Paid",
+      "status": "Confirmed",
+      "orderDate": "2026-05-05T09:00:18.593Z",
       "id": 1
     }
   ]

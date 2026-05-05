@@ -33,109 +33,53 @@ const Login = () => {
     setLoading(true);
 
     try {
+      const endpoint = isLoginView ? '/auth/login' : '/auth/register';
+      const body = isLoginView 
+        ? { email: formData.email, password: formData.password }
+        : { name: formData.name, email: formData.email, password: formData.password };
+
+      if (!isLoginView && !validatePassword(formData.password)) {
+        setErrorMsg('Password must be 8+ chars with uppercase, lowercase, numbers & symbols.');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      // Handle successful login
       if (isLoginView) {
-        // 1. Check Hardcoded Admin
-        if (formData.email === 'admin@phub.com' && formData.password === 'admin123') {
-          const adminUser = { name: 'Super Admin', email: formData.email, role: 'admin', id: 'admin-001' };
-          
-          const canLogin = await checkDeviceLimit(adminUser.id);
-          if (!canLogin) {
-            setShowLimitPopup(true);
-            setLoading(false);
-            return;
-          }
-
-          login(adminUser);
-          navigate('/admin');
+        const { user, token } = data;
+        
+        const canLogin = await checkDeviceLimit(user.id);
+        if (!canLogin) {
+          setShowLimitPopup(true);
+          setLoading(false);
           return;
         }
 
-        // 2. Check Customers
-        const userRes = await fetch(`${API_URL}/users?email=${formData.email}`);
-        if (!userRes.ok) throw new Error('Server error');
-        const users = await userRes.json();
-
-        if (users.length > 0) {
-          const user = users[0];
-          if (user.password === formData.password) {
-            const canLogin = await checkDeviceLimit(user.id);
-            if (!canLogin) {
-              setShowLimitPopup(true);
-              setLoading(false);
-              return;
-            }
-
-            login({ ...user, role: user.role || 'customer' });
-            navigate('/');
-            return;
-          } else {
-            setErrorMsg('Invalid password.');
-            setLoading(false);
-            return;
-          }
-        }
-
-        // 3. Check Warehouse Managers
-        const warehouseRes = await fetch(`${API_URL}/warehouseAdmins?email=${formData.email}`);
-        if (!warehouseRes.ok) throw new Error('Server error');
-        const admins = await warehouseRes.json();
-
-        if (admins.length > 0) {
-          const admin = admins[0];
-          if (admin.password === formData.password) {
-            const canLogin = await checkDeviceLimit(admin.id);
-            if (!canLogin) {
-              setShowLimitPopup(true);
-              setLoading(false);
-              return;
-            }
-
-            // Log in as warehouse manager
-            localStorage.setItem('warehouseAdmin', JSON.stringify(admin));
-            // Also update global user state so header updates
-            login({ ...admin, role: 'warehouse_manager' });
-            navigate('/warehouse');
-            return;
-          } else {
-            setErrorMsg('Invalid password.');
-            setLoading(false);
-            return;
-          }
-        }
-
-        setErrorMsg('Invalid details. Account not found.');
+        login(user, token);
+        
+        if (user.role === 'admin') navigate('/admin');
+        else if (user.role === 'warehouse_manager') navigate('/warehouse');
+        else navigate('/');
       } else {
-        if (!validatePassword(formData.password)) {
-          setErrorMsg('Password must be 8+ chars with uppercase, lowercase, numbers & symbols.');
-          setLoading(false);
-          return;
-        }
-
-        const checkRes = await fetch(`${API_URL}/users?email=${formData.email}`);
-        if (!checkRes.ok) throw new Error('Server error');
-        const existingUsers = await checkRes.json();
-
-        if (existingUsers.length > 0) {
-          setErrorMsg('Email already registered.');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`${API_URL}/users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, role: 'user' })
-        });
-
-        const savedUser = await response.json();
-        login(savedUser);
-        navigate('/');
+        // After registration, switch to login view or auto-login
+        setIsLoginView(true);
+        setErrorMsg('Registration successful! Please log in.');
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setErrorMsg(error.message === 'Failed to fetch' 
-        ? `Cannot connect to server at ${API_URL}. Please ensure the backend is running and accessible from this device.` 
-        : 'An error occurred during authentication. Please try again.');
+      setErrorMsg(error.message);
     } finally {
       setLoading(false);
     }
@@ -150,7 +94,7 @@ const Login = () => {
         </p>
 
         {errorMsg && (
-          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          <div style={{ background: errorMsg.includes('successful') ? '#dcfce7' : '#fee2e2', color: errorMsg.includes('successful') ? '#15803d' : '#b91c1c', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
             {errorMsg}
           </div>
         )}
@@ -165,6 +109,7 @@ const Login = () => {
                   type="text"
                   name="name"
                   placeholder="John Doe"
+                  className="auth-input"
                   style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', outline: 'none' }}
                   value={formData.name}
                   onChange={handleChange}
@@ -182,6 +127,7 @@ const Login = () => {
                 type="email"
                 name="email"
                 placeholder="john@example.com"
+                className="auth-input"
                 style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', outline: 'none' }}
                 value={formData.email}
                 onChange={handleChange}
@@ -198,6 +144,7 @@ const Login = () => {
                 type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="••••••••"
+                className="auth-input"
                 style={{ width: '100%', padding: '0.75rem 3rem 0.75rem 2.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', outline: 'none' }}
                 value={formData.password}
                 onChange={handleChange}
@@ -230,35 +177,17 @@ const Login = () => {
 
         {showLimitPopup && (
           <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(4px)'
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center',
+            alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)'
           }}>
             <div style={{
-              background: 'white',
-              padding: '2.5rem',
-              borderRadius: 'var(--radius-lg)',
-              maxWidth: '400px',
-              textAlign: 'center',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              background: 'white', padding: '2.5rem', borderRadius: 'var(--radius-lg)',
+              maxWidth: '400px', textAlign: 'center', boxShadow: 'var(--shadow-lg)'
             }}>
               <div style={{
-                width: '60px',
-                height: '60px',
-                background: '#fee2e2',
-                borderRadius: '50%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                margin: '0 auto 1.5rem'
+                width: '60px', height: '60px', background: '#fee2e2', borderRadius: '50%',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.5rem'
               }}>
                 <Lock size={30} style={{ color: '#ef4444' }} />
               </div>
@@ -266,11 +195,7 @@ const Login = () => {
               <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.5 }}>
                 You are currently logged in on 3 other devices. Please log out from one of those devices to log in here.
               </p>
-              <button 
-                onClick={() => setShowLimitPopup(false)}
-                className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '0.875rem' }}
-              >
+              <button onClick={() => setShowLimitPopup(false)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.875rem' }}>
                 Understood
               </button>
             </div>

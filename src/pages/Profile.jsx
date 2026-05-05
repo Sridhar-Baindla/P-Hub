@@ -1,12 +1,32 @@
-import React, { useState, useContext } from 'react';
-import { User, MapPin, Package, Heart, LogOut } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { User, MapPin, Package, Heart, LogOut, Download, CheckCircle, Clock } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
+import { generateInvoice } from '../utils/invoiceGenerator';
 
 const Profile = () => {
-  const { user, logout } = useContext(AppContext);
+  const { user, logout, authenticatedFetch, token } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('profile');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeTab === 'orders' && user && token) {
+      setLoading(true);
+      authenticatedFetch(`${API_URL}/orders`)
+        .then(res => res.json())
+        .then(data => {
+          setOrders(Array.isArray(data) ? data : []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    }
+  }, [activeTab, user, token]);
 
   const handleLogout = () => {
     logout();
@@ -17,13 +37,10 @@ const Profile = () => {
     return (
       <div className="container" style={{ padding: '4rem 0', textAlign: 'center' }}>
         <h2>Please login to view your profile</h2>
+        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => navigate('/login')}>Log In</button>
       </div>
     );
   }
-
-  const handleSave = () => {
-    alert("Profile saved successfully!");
-  };
 
   return (
     <div className="container profile-layout" style={{ padding: '4rem 0' }}>
@@ -34,81 +51,103 @@ const Profile = () => {
           </div>
           <h3 style={{ marginBottom: '0.25rem' }}>{user.name}</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{user.email}</p>
+          <span className="badge badge-success" style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: '0.7rem' }}>
+            {user.role === 'admin' ? 'Administrator' : 'Verified Member'}
+          </span>
         </div>
         
-        <button 
-          onClick={() => setActiveTab('profile')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'profile' ? 'var(--primary)' : 'transparent', color: activeTab === 'profile' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500 }}
-        >
+        <button onClick={() => setActiveTab('profile')} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'profile' ? 'var(--primary)' : 'transparent', color: activeTab === 'profile' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500, border: 'none', cursor: 'pointer' }}>
           <User size={20} /> My Profile
         </button>
-        <button 
-          onClick={() => setActiveTab('orders')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'orders' ? 'var(--primary)' : 'transparent', color: activeTab === 'orders' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500 }}
-        >
+        <button onClick={() => setActiveTab('orders')} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'orders' ? 'var(--primary)' : 'transparent', color: activeTab === 'orders' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500, border: 'none', cursor: 'pointer' }}>
           <Package size={20} /> My Orders
         </button>
-        <button 
-          onClick={() => setActiveTab('addresses')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'addresses' ? 'var(--primary)' : 'transparent', color: activeTab === 'addresses' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500 }}
-        >
+        <button onClick={() => setActiveTab('addresses')} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'addresses' ? 'var(--primary)' : 'transparent', color: activeTab === 'addresses' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500, border: 'none', cursor: 'pointer' }}>
           <MapPin size={20} /> Saved Addresses
         </button>
-        <button 
-          onClick={() => setActiveTab('wishlist')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: activeTab === 'wishlist' ? 'var(--primary)' : 'transparent', color: activeTab === 'wishlist' ? 'white' : 'var(--text-primary)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500 }}
-        >
-          <Heart size={20} /> Wishlist
-        </button>
-        <button 
-          onClick={handleLogout}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', color: 'var(--danger)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500, marginTop: 'auto', background: 'transparent', cursor: 'pointer', border: 'none' }}
-        >
+        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', color: 'var(--danger)', borderRadius: 'var(--radius-md)', textAlign: 'left', fontWeight: 500, marginTop: 'auto', background: 'transparent', cursor: 'pointer', border: 'none' }}>
           <LogOut size={20} /> Logout
         </button>
       </aside>
 
-      <main className="profile-main" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+      <main className="profile-main" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', minHeight: '500px' }}>
         {activeTab === 'profile' && (
           <div>
             <h2 style={{ marginBottom: '2rem' }}>Personal Information</h2>
-            <div className="profile-grid">
-              <div className="input-group">
-                <label className="input-label">Full Name</label>
-                <input type="text" className="input-field" defaultValue={user.name} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Full Name</label>
+                <input type="text" className="input-field" defaultValue={user.name} style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }} />
               </div>
-              <div className="input-group">
-                <label className="input-label">Email Address</label>
-                <input type="email" className="input-field" defaultValue={user.email} />
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Email Address</label>
+                <input type="email" className="input-field" defaultValue={user.email} disabled style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: '#f8f9fa' }} />
               </div>
             </div>
-            <button className="btn btn-primary" style={{ marginTop: '2rem' }} onClick={handleSave}>Save Changes</button>
+            <button className="btn btn-primary" style={{ marginTop: '2rem' }} onClick={() => alert('Profile updated!')}>Save Changes</button>
           </div>
         )}
+
         {activeTab === 'orders' && (
           <div>
-            <h2>My Orders</h2>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>No orders found.</p>
+            <h2 style={{ marginBottom: '2rem' }}>Order History</h2>
+            {loading ? (
+              <p>Loading orders...</p>
+            ) : orders.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {orders.map(order => (
+                  <div key={order.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', background: 'var(--background)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Order #{order.id}</span>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                          Placed on {new Date(order.orderDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: order.status === 'Confirmed' ? 'var(--success)' : 'var(--primary)', fontWeight: 600 }}>
+                          {order.status === 'Confirmed' ? <CheckCircle size={16} /> : <Clock size={16} />}
+                          {order.status}
+                        </div>
+                        <button 
+                          onClick={() => generateInvoice(order)}
+                          style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}
+                        >
+                          <Download size={16} /> Download Invoice
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {order.items.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                          <span>{item.name} x {item.quantity}</span>
+                          <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                      <span>Total Amount</span>
+                      <span style={{ color: 'var(--primary)' }}>₹{order.totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                <Package size={48} style={{ color: 'var(--border)', marginBottom: '1rem' }} />
+                <p style={{ color: 'var(--text-secondary)' }}>You haven't placed any orders yet.</p>
+                <button className="btn btn-secondary" style={{ marginTop: '1rem' }} onClick={() => navigate('/')}>Browse Medicines</button>
+              </div>
+            )}
           </div>
         )}
+
         {activeTab === 'addresses' && (
           <div>
-            <h2>Saved Addresses</h2>
-            <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <span className="badge badge-success" style={{position: 'relative', top: '0', right: '0'}}>Home</span>
-                <button style={{ color: 'var(--primary)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>Edit</button>
-              </div>
-              <p style={{ fontWeight: 500 }}>{user.name}</p>
-              <p style={{ color: 'var(--text-secondary)' }}>123 Main St, Apt 4B<br/>New York, NY 10001<br/>United States</p>
-            </div>
+            <h2 style={{ marginBottom: '2rem' }}>Saved Addresses</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>Manage your delivery locations for faster checkout.</p>
+            {/* Address list would go here, similar to suggested addresses in checkout */}
             <button className="btn btn-secondary" style={{ marginTop: '1rem' }}>+ Add New Address</button>
-          </div>
-        )}
-        {activeTab === 'wishlist' && (
-          <div>
-            <h2>Wishlist</h2>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>Your wishlist is empty.</p>
           </div>
         )}
       </main>

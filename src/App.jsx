@@ -19,6 +19,8 @@ import Warehouse from './pages/Warehouse';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import WarehouseLogin from './pages/WarehouseLogin';
+import Checkout from './pages/Checkout';
+
 
 function App() {
 
@@ -45,6 +47,8 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/returns" element={<Returns />} />
+          <Route path="/checkout" element={<Checkout />} />
+
         </Routes>
       </main>
 
