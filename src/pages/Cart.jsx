@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { ShoppingCart, ArrowRight, Trash2, Plus, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
@@ -9,15 +9,8 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchCart();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchCart = () => {
+  const fetchCart = useCallback(() => {
+    if (!user) return;
     fetch(`${API_URL}/cart?_expand=medicine&userId=${user.id}`)
       .then(res => res.json())
       .then(data => {
@@ -28,7 +21,15 @@ const Cart = () => {
         console.error(err);
         setLoading(false);
       });
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+    } else {
+      setLoading(prev => prev ? false : prev);
+    }
+  }, [user, fetchCart]);
 
   const handleUpdateQuantity = async (id, currentQty, delta) => {
     const newQty = currentQty + delta;

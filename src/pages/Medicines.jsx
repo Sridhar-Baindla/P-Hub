@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Search, Filter, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useContext } from 'react';
+import { Search, Plus, Check } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Medicines.css';
 import { API_URL } from '../config';

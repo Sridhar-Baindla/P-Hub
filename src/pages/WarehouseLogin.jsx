@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
@@ -40,7 +40,7 @@ const WarehouseLogin = () => {
       } else {
         setError('Invalid credentials for this location.');
       }
-    } catch (err) {
+    } catch {
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);

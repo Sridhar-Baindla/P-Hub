@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Package, MapPin, LogOut, Check, Save, ArrowLeft, Plus, X, Edit2, UploadCloud } from 'lucide-react';
-import { AppContext } from '../context/AppContext';
+import { Package, MapPin, LogOut, Check, Plus, X, Edit2, UploadCloud, Search } from 'lucide-react';
 import './Warehouse.css';
 import { API_URL } from '../config';
 
 const Warehouse = () => {
-  const { user, login, logout } = useContext(AppContext);
   const [warehouseAdmin, setWarehouseAdmin] = useState(() => {
     const saved = localStorage.getItem('warehouseAdmin');
     return saved ? JSON.parse(saved) : null;
   });
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [stock, setStock] = useState([]);
   const [medicines, setMedicines] = useState([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [updateMsg, setUpdateMsg] = useState('');
   const [editingStock, setEditingStock] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newStock, setNewStock] = useState({
@@ -32,15 +29,7 @@ const Warehouse = () => {
     image: null
   });
 
-  // Check if a warehouse admin is already in session
-  useEffect(() => {
-    if (warehouseAdmin) {
-      fetchStock(warehouseAdmin.location);
-    }
-    fetchMedicines();
-  }, []);
-
-  const fetchMedicines = async () => {
+  const fetchMedicines = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/medicines`);
       const data = await res.json();
@@ -48,9 +37,9 @@ const Warehouse = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
 
-  const fetchStock = async (location) => {
+  const fetchStock = useCallback(async (location) => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/stock?location=${location}`);
@@ -61,29 +50,15 @@ const Warehouse = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
-      const admins = await res.json();
-      if (admins.length > 0) {
-        const admin = admins[0];
-        setWarehouseAdmin(admin);
-        localStorage.setItem('warehouseAdmin', JSON.stringify(admin));
-        fetchStock(admin.location);
-      } else {
-        setError('Invalid credentials for this location.');
-      }
-    } catch (err) {
-      setError('Connection error. Please try again.');
-    } finally {
-      setLoading(false);
+  // Check if a warehouse admin is already in session
+  useEffect(() => {
+    if (warehouseAdmin) {
+      fetchStock(warehouseAdmin.location);
     }
-  };
+    fetchMedicines();
+  }, [warehouseAdmin, fetchStock, fetchMedicines]);
 
   const handleLogout = () => {
     setWarehouseAdmin(null);
@@ -223,6 +198,18 @@ const Warehouse = () => {
     return <Navigate to="/warehouse/login" replace />;
   }
 
+  const filteredStock = stock.filter(item => {
+    const medicine = medicines.find(m => m.id === item.medicineId);
+    if (!medicine) return false;
+    const q = searchQuery.toLowerCase();
+    return (medicine.name || '').toLowerCase().includes(q) || 
+           (medicine.description || '').toLowerCase().includes(q) ||
+           (medicine.manufacturer || '').toLowerCase().includes(q) ||
+           (medicine.category || '').toLowerCase().includes(q) ||
+           (medicine.expiryDate && medicine.expiryDate.toLowerCase().includes(q)) ||
+           (item.quantity || 0).toString().includes(q);
+  });
+
   return (
     <div className="warehouse-dashboard">
       <header className="warehouse-header">
@@ -246,16 +233,42 @@ const Warehouse = () => {
             <h1>Inventory Management</h1>
             <p>Update real-time stock levels for {warehouseAdmin.location} location.</p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <div className="warehouse-search-bar" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              background: 'var(--surface)', 
+              border: '1px solid var(--border)', 
+              borderRadius: 'var(--radius-lg)', 
+              padding: '0.6rem 1.25rem', 
+              gap: '0.75rem', 
+              minWidth: '350px',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <Search size={18} color="var(--text-secondary)" />
+              <input 
+                type="text" 
+                placeholder="Search name, formula, company, stock..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ 
+                  border: 'none', 
+                  background: 'none', 
+                  outline: 'none', 
+                  width: '100%',
+                  fontSize: '0.95rem'
+                }}
+              />
+            </div>
             {updateMsg && <div className="success-badge"><Check size={16} /> {updateMsg}</div>}
-            <button onClick={() => { setEditingStock(null); setShowAddModal(true); }} className="btn btn-primary add-stock-btn">
+            <button onClick={() => { setEditingStock(null); setShowAddModal(true); }} className="btn btn-primary add-stock-btn" style={{ whiteSpace: 'nowrap' }}>
               <Plus size={18} /> Add Stock
             </button>
           </div>
         </div>
 
         <div className="stock-grid">
-          {stock.map(item => {
+          {filteredStock.map(item => {
             const medicine = medicines.find(m => m.id === item.medicineId);
             if (!medicine) return null;
             
@@ -274,17 +287,24 @@ const Warehouse = () => {
                       <Edit2 size={18} />
                     </button>
                   </div>
-                  <p className="category">{medicine.category} • {medicine.manufacturer}</p>
-                  <p className="price-info" style={{ margin: '0.5rem 0', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {medicine.discountedPrice ? (
-                      <>
-                        <span style={{ color: 'var(--primary)' }}>₹{medicine.discountedPrice}</span>
-                        <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.85rem', marginLeft: '0.5rem' }}>₹{medicine.price}</span>
-                      </>
-                    ) : (
-                      <span>₹{medicine.price}</span>
+                  <p className="category">{medicine.category || 'General'} • {medicine.manufacturer || 'Unknown'}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0.5rem 0' }}>
+                    <p className="price-info" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {medicine.discountedPrice ? (
+                        <>
+                          <span style={{ color: 'var(--primary)' }}>₹{medicine.discountedPrice}</span>
+                          <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.85rem', marginLeft: '0.5rem' }}>₹{medicine.price}</span>
+                        </>
+                      ) : (
+                        <span>₹{medicine.price}</span>
+                      )}
+                    </p>
+                    {medicine.expiryDate && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        Exp: {new Date(medicine.expiryDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      </span>
                     )}
-                  </p>
+                  </div>
                   
                   <div className="quantity-manager">
                     <label>Available Stock (Units)</label>
@@ -308,11 +328,22 @@ const Warehouse = () => {
           })}
         </div>
 
-        {stock.length === 0 && !loading && (
-          <div className="empty-state">
-            <Package size={60} />
-            <h2>No items in stock</h2>
-            <p>This warehouse doesn't have any items registered yet.</p>
+        {filteredStock.length === 0 && !loading && (
+          <div className="empty-state" style={{ textAlign: 'center', padding: '4rem 0' }}>
+            {searchQuery ? (
+              <>
+                <Search size={60} color="var(--text-secondary)" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
+                <h2>No matching results</h2>
+                <p>We couldn't find any medicine matching "{searchQuery}"</p>
+                <button onClick={() => setSearchQuery('')} className="btn" style={{ marginTop: '1.5rem', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}>Clear Search</button>
+              </>
+            ) : (
+              <>
+                <Package size={60} color="var(--text-secondary)" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
+                <h2>No items in stock</h2>
+                <p>This warehouse doesn't have any items registered yet.</p>
+              </>
+            )}
           </div>
         )}
       </main>

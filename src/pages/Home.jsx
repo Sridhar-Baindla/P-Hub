@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShieldCheck, Clock, FileText, Truck, Activity } from 'lucide-react';
+import { Search, ShieldCheck, FileText, Truck, Activity } from 'lucide-react';
 import './Home.css';
 import heroImage from '../assets/hero_pharmacy.png';
 

@@ -1,13 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Pill, ShoppingCart, User, Search, Bell, X, LogOut, Check, Menu } from 'lucide-react';
+import { ShoppingCart, User, Search, Bell, X, LogOut, Check, Menu } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
-import AuthModal from './AuthModal';
 import logoImg from '../assets/logo.png';
 import { API_URL } from '../config';
 
 const Header = () => {
-  const { user, login, logout, cartCount } = useContext(AppContext);
+  const { user, logout, cartCount } = useContext(AppContext);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');

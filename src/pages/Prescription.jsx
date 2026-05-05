@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useCallback } from 'react';
 import { UploadCloud, FileText, CheckCircle, Clock, AlertCircle, User, Phone, MapPin, Search } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Prescription.css';
@@ -20,15 +20,20 @@ const Prescription = () => {
   const [suggestedPrescription, setSuggestedPrescription] = useState(null);
   const [usedPast, setUsedPast] = useState(false);
 
+  const fetchPastPrescriptions = useCallback(() => {
+    if (!user) return;
+    fetch(`${API_URL}/prescriptions?userId=${user.id}`)
+      .then(res => res.json())
+      .then(data => setPastPrescriptions(data))
+      .catch(err => console.error(err));
+  }, [user]);
+
   useEffect(() => {
     if (user) {
-      setName(user.name || '');
-      fetch(`${API_URL}/prescriptions?userId=${user.id}`)
-        .then(res => res.json())
-        .then(data => setPastPrescriptions(data))
-        .catch(err => console.error(err));
+      if (!name && user.name) setName(user.name);
+      fetchPastPrescriptions();
     }
-  }, [user]);
+  }, [user, fetchPastPrescriptions, name]);
 
   const handleDrag = function(e) {
     e.preventDefault();
@@ -258,7 +263,7 @@ const Prescription = () => {
                 <div style={{ marginBottom: '0.75rem' }}>{phone}</div>
                 <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{address}</div>
               </div>
-              <button className="btn btn-secondary" onClick={() => { setUploadState('idle'); setFile(null); setUsedPast(false); }}>Upload Another</button>
+              <button type="button" className="btn btn-secondary" onClick={() => { setUploadState('idle'); setFile(null); setUsedPast(false); }}>Upload Another</button>
             </div>
           )}
         </div>

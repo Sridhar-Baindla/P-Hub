@@ -12,7 +12,6 @@ import {
   Trash2, 
   X,
   UploadCloud,
-  Lock,
   Users
 } from 'lucide-react';
 import './Admin.css';
