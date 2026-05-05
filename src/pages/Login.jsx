@@ -43,6 +43,7 @@ const Login = () => {
 
         // 2. Check Customers
         const userRes = await fetch(`${API_URL}/users?email=${formData.email}`);
+        if (!userRes.ok) throw new Error('Server error');
         const users = await userRes.json();
 
         if (users.length > 0) {
@@ -60,6 +61,7 @@ const Login = () => {
 
         // 3. Check Warehouse Managers
         const warehouseRes = await fetch(`${API_URL}/warehouseAdmins?email=${formData.email}`);
+        if (!warehouseRes.ok) throw new Error('Server error');
         const admins = await warehouseRes.json();
 
         if (admins.length > 0) {
@@ -87,6 +89,7 @@ const Login = () => {
         }
 
         const checkRes = await fetch(`${API_URL}/users?email=${formData.email}`);
+        if (!checkRes.ok) throw new Error('Server error');
         const existingUsers = await checkRes.json();
 
         if (existingUsers.length > 0) {
@@ -107,7 +110,9 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setErrorMsg('An error occurred. Please try again.');
+      setErrorMsg(error.message === 'Failed to fetch' 
+        ? 'Cannot connect to server. Please ensure the backend is running.' 
+        : 'An error occurred during authentication. Please try again.');
     } finally {
       setLoading(false);
     }

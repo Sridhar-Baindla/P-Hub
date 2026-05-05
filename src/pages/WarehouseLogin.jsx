@@ -18,6 +18,7 @@ const WarehouseLogin = () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
+      if (!res.ok) throw new Error('Server error');
       const admins = await res.json();
       if (admins.length > 0) {
         const admin = admins[0];

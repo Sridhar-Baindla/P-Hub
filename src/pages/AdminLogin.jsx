@@ -38,7 +38,7 @@ const AdminLogin = () => {
         setErrorMsg('Invalid admin credentials.');
       }
     } catch (error) {
-      setErrorMsg('An error occurred. Please try again.');
+      setErrorMsg('An error occurred during authentication. Please try again.');
     } finally {
       setLoading(false);
     }

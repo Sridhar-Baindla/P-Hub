@@ -95,7 +95,9 @@ const AuthModal = ({ isOpen, onClose }) => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setErrorMsg('An error occurred. Please try again.');
+      setErrorMsg(error.message === 'Failed to fetch'
+        ? 'Cannot connect to server. Please ensure the backend is running.'
+        : 'An error occurred during authentication. Please try again.');
     } finally {
       setLoading(false);
     }
