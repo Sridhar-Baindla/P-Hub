@@ -5,11 +5,12 @@ import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Login = () => {
-  const { login } = useContext(AppContext);
+  const { login, checkDeviceLimit } = useContext(AppContext);
   const navigate = useNavigate();
   const [isLoginView, setIsLoginView] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showLimitPopup, setShowLimitPopup] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,6 +37,14 @@ const Login = () => {
         // 1. Check Hardcoded Admin
         if (formData.email === 'admin@phub.com' && formData.password === 'admin123') {
           const adminUser = { name: 'Super Admin', email: formData.email, role: 'admin', id: 'admin-001' };
+          
+          const canLogin = await checkDeviceLimit(adminUser.id);
+          if (!canLogin) {
+            setShowLimitPopup(true);
+            setLoading(false);
+            return;
+          }
+
           login(adminUser);
           navigate('/admin');
           return;
@@ -49,6 +58,13 @@ const Login = () => {
         if (users.length > 0) {
           const user = users[0];
           if (user.password === formData.password) {
+            const canLogin = await checkDeviceLimit(user.id);
+            if (!canLogin) {
+              setShowLimitPopup(true);
+              setLoading(false);
+              return;
+            }
+
             login({ ...user, role: user.role || 'customer' });
             navigate('/');
             return;
@@ -67,6 +83,13 @@ const Login = () => {
         if (admins.length > 0) {
           const admin = admins[0];
           if (admin.password === formData.password) {
+            const canLogin = await checkDeviceLimit(admin.id);
+            if (!canLogin) {
+              setShowLimitPopup(true);
+              setLoading(false);
+              return;
+            }
+
             // Log in as warehouse manager
             localStorage.setItem('warehouseAdmin', JSON.stringify(admin));
             // Also update global user state so header updates
@@ -204,6 +227,55 @@ const Login = () => {
             {isLoginView ? 'Sign Up' : 'Log In'}
           </button>
         </div>
+
+        {showLimitPopup && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div style={{
+              background: 'white',
+              padding: '2.5rem',
+              borderRadius: 'var(--radius-lg)',
+              maxWidth: '400px',
+              textAlign: 'center',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                background: '#fee2e2',
+                borderRadius: '50%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                margin: '0 auto 1.5rem'
+              }}>
+                <Lock size={30} style={{ color: '#ef4444' }} />
+              </div>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--navy)' }}>Device Limit Reached</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.5 }}>
+                You are currently logged in on 3 other devices. Please log out from one of those devices to log in here.
+              </p>
+              <button 
+                onClick={() => setShowLimitPopup(false)}
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '0.875rem' }}
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

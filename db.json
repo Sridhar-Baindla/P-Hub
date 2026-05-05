@@ -178,5 +178,6 @@
   ],
   "cart": [],
   "notifications": [],
-  "prescriptions": []
+  "prescriptions": [],
+  "sessions": []
 }

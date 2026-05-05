@@ -5,9 +5,10 @@ import { AppContext } from '../context/AppContext';
 import { API_URL } from '../config';
 
 const AuthModal = ({ isOpen, onClose }) => {
-  const { login } = useContext(AppContext);
+  const { login, checkDeviceLimit } = useContext(AppContext);
   const [isLoginView, setIsLoginView] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showLimitReached, setShowLimitReached] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,6 +34,7 @@ const AuthModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setShowLimitReached(false);
     setLoading(true);
 
     try {
@@ -45,6 +47,12 @@ const AuthModal = ({ isOpen, onClose }) => {
         if (users.length > 0) {
           const user = users[0];
           if (user.password === formData.password) {
+            const canLogin = await checkDeviceLimit(user.id);
+            if (!canLogin) {
+              setShowLimitReached(true);
+              setLoading(false);
+              return;
+            }
             login(user);
             onClose();
           } else {
@@ -113,6 +121,13 @@ const AuthModal = ({ isOpen, onClose }) => {
         <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
           {isLoginView ? 'Welcome Back' : 'Create an Account'}
         </h2>
+
+        {showLimitReached && (
+          <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', textAlign: 'center' }}>
+            <strong>Device Limit Reached</strong>
+            <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>You are logged in on 3 other devices. Please log out from one to continue.</p>
+          </div>
+        )}
 
         {errorMsg && (
           <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontSize: '0.9rem' }}>
