@@ -39,6 +39,22 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Access denied. Admin role required.' });
+  }
+};
+
+const isWarehouseOrAdmin = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'warehouse_manager')) {
+    next();
+  } else {
+    res.status(403).json({ error: 'Access denied. Authorized role required.' });
+  }
+};
+
 // Initialize database
 const initDb = () => {
   db.serialize(() => {
@@ -206,7 +222,7 @@ app.get('/stock', (req, res) => {
   });
 });
 
-app.post('/stock', (req, res) => {
+app.post('/stock', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { medicineId, location, quantity } = req.body;
   db.run("INSERT INTO stock (medicineId, location, quantity) VALUES (?, ?, ?)", [medicineId, location, quantity], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -214,7 +230,7 @@ app.post('/stock', (req, res) => {
   });
 });
 
-app.patch('/stock/:id', (req, res) => {
+app.patch('/stock/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { quantity } = req.body;
   db.run("UPDATE stock SET quantity = ? WHERE id = ?", [quantity, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -264,7 +280,7 @@ app.get('/medicines/:id', (req, res) => {
 });
 
 // Admin Medicine Routes (Protected in real app, but for now open or check role)
-app.post('/medicines', (req, res) => {
+app.post('/medicines', authenticateToken, isAdmin, (req, res) => {
   const { name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock } = req.body;
   db.run(`INSERT INTO medicines (name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -276,7 +292,7 @@ app.post('/medicines', (req, res) => {
   );
 });
 
-app.patch('/medicines/:id', (req, res) => {
+app.patch('/medicines/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   // Remove fields that don't exist in the DB anymore
   const { salt, ...updateData } = req.body;
   const fields = Object.keys(updateData);
@@ -293,7 +309,7 @@ app.patch('/medicines/:id', (req, res) => {
 });
 
 // Unified Admin Inventory Route (Handles both Medicine + Initial Stock)
-app.post('/admin/add-inventory', (req, res) => {
+app.post('/admin/add-inventory', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { name, description, manufacturer, price, discountedPrice, expiryDate, category, image, quantity, location } = req.body;
   
   db.run(`INSERT INTO medicines (name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock) 
@@ -320,7 +336,7 @@ app.post('/admin/add-inventory', (req, res) => {
   );
 });
 
-app.delete('/medicines/:id', (req, res) => {
+app.delete('/medicines/:id', authenticateToken, isAdmin, (req, res) => {
   db.run("DELETE FROM medicines WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     // Also delete associated stock
@@ -525,7 +541,7 @@ app.post('/warehouseAdmins', async (req, res) => {
   );
 });
 
-app.delete('/warehouseAdmins/:id', (req, res) => {
+app.delete('/warehouseAdmins/:id', authenticateToken, isAdmin, (req, res) => {
   db.run("DELETE FROM warehouseAdmins WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
