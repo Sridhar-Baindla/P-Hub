@@ -30,8 +30,8 @@ const Header = () => {
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    if (query.length > 2) {
-      fetch(`${API_URL}/medicines?name_like=${query}`)
+    if (query.length > 1) {
+      fetch(`${API_URL}/medicines?q=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(data => setSearchResults(data));
     } else {
@@ -66,8 +66,8 @@ const Header = () => {
     navigate('/login');
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setNotifications([]);
     navigate('/');
   };

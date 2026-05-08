@@ -20,28 +20,28 @@ const WarehouseLogin = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/warehouseAdmins?email=${loginData.email}&password=${loginData.password}`);
-      if (!res.ok) throw new Error('Server error');
-      const admins = await res.json();
-      if (admins.length > 0) {
-        const admin = admins[0];
+      const res = await fetch(`${API_URL}/auth/warehouse/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginData)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
 
-        const canLogin = await checkDeviceLimit(admin.id);
-        if (!canLogin) {
-          setShowLimitPopup(true);
-          setLoading(false);
-          return;
-        }
-
-        localStorage.setItem('warehouseAdmin', JSON.stringify(admin));
-        // Also update global user state so header updates
-        login({ ...admin, role: 'warehouse_manager' });
-        navigate('/warehouse');
-      } else {
-        setError('Invalid credentials for this location.');
+      const { token, admin } = data;
+      const canLogin = await checkDeviceLimit(admin.id);
+      if (!canLogin) {
+        setShowLimitPopup(true);
+        setLoading(false);
+        return;
       }
-    } catch {
-      setError('Connection error. Please try again.');
+
+      // Await login to ensure context and localStorage are fully updated
+      await login(admin, token);
+      navigate('/warehouse');
+    } catch (err) {
+      setError(err.message || 'Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,10 @@ const WarehouseLogin = () => {
                 placeholder="sridharshetty282002@gmail.com" 
                 style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', outline: 'none' }}
                 value={loginData.email}
-                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                onChange={(e) => {
+                  setLoginData({ ...loginData, email: e.target.value });
+                  if (error) setError('');
+                }}
                 required 
               />
             </div>
@@ -80,7 +83,10 @@ const WarehouseLogin = () => {
                 placeholder="••••••••" 
                 style={{ width: '100%', padding: '0.75rem 3rem 0.75rem 2.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', outline: 'none' }}
                 value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                onChange={(e) => {
+                  setLoginData({ ...loginData, password: e.target.value });
+                  if (error) setError('');
+                }}
                 required 
               />
               <button 
@@ -92,7 +98,7 @@ const WarehouseLogin = () => {
               </button>
             </div>
           </div>
-          {error && <div className="error-msg" style={{ marginBottom: '1.5rem' }}>{error}</div>}
+          {error && <div className="error-msg" style={{ marginBottom: '1.5rem', color: 'var(--danger)', fontSize: '0.9rem' }}>{error}</div>}
           <button type="submit" className="btn btn-primary login-btn" style={{ width: '100%', padding: '1rem' }} disabled={loading}>
             {loading ? 'Authenticating...' : 'Access Warehouse'}
           </button>

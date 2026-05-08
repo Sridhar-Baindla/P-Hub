@@ -85,7 +85,12 @@ const Cart = () => {
               <img src={item.medicine.image} alt={item.medicine.name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
               <div style={{ flex: 1 }}>
                 <h3 style={{ marginBottom: '0.25rem' }}>{item.medicine.name}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>By PharmaLife</p>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>By PharmaLife</p>
+                  <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#fef3c7', color: '#b45309', borderRadius: '4px', fontWeight: 600 }}>
+                    Exp: {item.medicine.expiryDate || 'N/A'}
+                  </span>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>

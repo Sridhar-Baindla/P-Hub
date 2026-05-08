@@ -1,9 +1,20 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Search, ShieldCheck, FileText, Truck, Activity } from 'lucide-react';
 import './Home.css';
 import heroImage from '../assets/hero_pharmacy.png';
 
 const Home = () => {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      if (query.trim()) {
+        navigate(`/medicines?search=${encodeURIComponent(query)}`);
+      }
+    }
+  };
   return (
     <div className="home-page">
       {/* Hero Section */}
@@ -20,8 +31,14 @@ const Home = () => {
             
             <div className="hero-search">
               <Search size={20} color="var(--text-secondary)" style={{ marginLeft: '1rem', alignSelf: 'center' }} />
-              <input type="text" placeholder="Search for medicines, health products..." />
-              <button>Search</button>
+              <input 
+                type="text" 
+                placeholder="Search for medicines, health products..." 
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleSearch}
+              />
+              <button onClick={handleSearch}>Search</button>
             </div>
 
             <div className="hero-actions">

@@ -1,10 +1,12 @@
 import { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { API_URL } from '../config';
 
 const AuthModal = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const { login, checkDeviceLimit } = useContext(AppContext);
   const [isLoginView, setIsLoginView] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,6 +26,7 @@ const AuthModal = ({ isOpen, onClose }) => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (errorMsg) setErrorMsg('');
   };
 
   const validatePassword = (password) => {
@@ -40,27 +43,38 @@ const AuthModal = ({ isOpen, onClose }) => {
     try {
       if (isLoginView) {
         // Login Flow
-        const response = await fetch(`${API_URL}/users?email=${formData.email}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const users = await response.json();
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
+        });
 
-        if (users.length > 0) {
-          const user = users[0];
-          if (user.password === formData.password) {
-            const canLogin = await checkDeviceLimit(user.id);
-            if (!canLogin) {
-              setShowLimitReached(true);
-              setLoading(false);
-              return;
-            }
-            login(user);
-            onClose();
-          } else {
-            setErrorMsg('Invalid details. Please check your password.');
-          }
-        } else {
-          setErrorMsg('Invalid details. User not found.');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Invalid email or password.');
         }
+
+        const data = await response.json();
+        const canLogin = await checkDeviceLimit(data.user.id);
+
+        if (!canLogin) {
+          setShowLimitReached(true);
+          setLoading(false);
+          return;
+        }
+
+        // Await login to ensure session is fully established
+        await login(data.user, data.token);
+        onClose();
+        
+        // Redirection based on role
+        if (data.user.role === 'admin') navigate('/admin');
+        else if (data.user.role === 'warehouse_manager') navigate('/warehouse');
       } else {
         // Signup Flow
         if (!validatePassword(formData.password)) {
@@ -69,43 +83,33 @@ const AuthModal = ({ isOpen, onClose }) => {
           return;
         }
 
-        // Check if user already exists
-        const checkRes = await fetch(`${API_URL}/users?email=${formData.email}`);
-        if (!checkRes.ok) throw new Error('Network response was not ok');
-        const existingUsers = await checkRes.json();
-
-        if (existingUsers.length > 0) {
-          setErrorMsg('User with this email already exists.');
-          setLoading(false);
-          return;
-        }
-
-        const newUser = {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: 'user'
-        };
-
-        const response = await fetch(`${API_URL}/users`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(newUser)
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: 'user'
+          })
         });
 
-        if (!response.ok) throw new Error('Failed to create account');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create account');
+        }
 
-        const savedUser = await response.json();
-        login(savedUser);
+        const data = await response.json();
+        await login(data.user, data.token);
         onClose();
       }
     } catch (error) {
       console.error('Auth error:', error);
       setErrorMsg(error.message === 'Failed to fetch'
         ? `Cannot connect to server at ${API_URL}. Please ensure the backend is running and accessible from this device.`
-        : 'An error occurred during authentication. Please try again.');
+        : error.message);
     } finally {
       setLoading(false);
     }
@@ -117,7 +121,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         <button className="modal-close" onClick={onClose}>
           <X size={24} />
         </button>
-        
+
         <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
           {isLoginView ? 'Welcome Back' : 'Create an Account'}
         </h2>
@@ -150,7 +154,7 @@ const AuthModal = ({ isOpen, onClose }) => {
               />
             </div>
           )}
-          
+
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
             <input
@@ -186,8 +190,8 @@ const AuthModal = ({ isOpen, onClose }) => {
           {isLoginView ? (
             <p>
               Don't have an account?{' '}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setIsLoginView(false); setErrorMsg(''); }}
                 style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
               >
@@ -197,8 +201,8 @@ const AuthModal = ({ isOpen, onClose }) => {
           ) : (
             <p>
               Already have an account?{' '}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => { setIsLoginView(true); setErrorMsg(''); }}
                 style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
               >

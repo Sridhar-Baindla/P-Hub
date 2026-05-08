@@ -20,6 +20,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errorMsg) setErrorMsg('');
   };
 
   const validatePassword = (password) => {
@@ -58,19 +59,20 @@ const Login = () => {
 
       // Handle successful login
       if (isLoginView) {
-        const { user, token } = data;
+        const { user: userData, token: userToken } = data;
         
-        const canLogin = await checkDeviceLimit(user.id);
+        const canLogin = await checkDeviceLimit(userData.id);
         if (!canLogin) {
           setShowLimitPopup(true);
           setLoading(false);
           return;
         }
 
-        login(user, token);
+        // MUST await login to ensure localStorage is set before navigation
+        await login(userData, userToken);
         
-        if (user.role === 'admin') navigate('/admin');
-        else if (user.role === 'warehouse_manager') navigate('/warehouse');
+        if (userData.role === 'admin') navigate('/admin');
+        else if (userData.role === 'warehouse_manager') navigate('/warehouse');
         else navigate('/');
       } else {
         // After registration, switch to login view or auto-login

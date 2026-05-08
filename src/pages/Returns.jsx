@@ -4,7 +4,7 @@ const Returns = () => {
   return (
     <div className="container" style={{ padding: '4rem 0', maxWidth: '800px' }}>
       <h1 style={{ marginBottom: '1rem', fontSize: '2.5rem' }}>Return & Refund Policy</h1>
-      
+
       <div style={{ background: 'var(--surface)', padding: '3rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border)', lineHeight: '1.8', color: 'var(--text-primary)' }}>
         <p style={{ marginBottom: '2rem' }}>
           At P-Hub, customer safety and satisfaction are our priorities. Due to the sensitive nature of healthcare products, our return policy is designed to maintain quality and compliance.

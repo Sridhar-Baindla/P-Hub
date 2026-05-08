@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Plus, Check } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Medicines.css';
@@ -8,12 +9,18 @@ const CATEGORIES = ['All', 'Pain Relief', 'Antibiotics', 'Supplements', 'Allergy
 
 const Medicines = () => {
   const { user, token, fetchCartCount, authenticatedFetch } = useContext(AppContext);
+  const [searchParams] = useSearchParams();
   const [medicines, setMedicines] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [addedItems, setAddedItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [stockLevels, setStockLevels] = useState([]);
+
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,24 +118,50 @@ const Medicines = () => {
 
         <div className="medicine-grid">
           {filteredMedicines.map(med => (
-            <div key={med.id} className="medicine-card">
+            <div key={med.id} className={`medicine-card ${med.totalStock === 0 ? 'out-of-stock' : ''}`}>
               <div className="medicine-image-container">
                 <img src={med.image} alt={med.name} className="medicine-image" />
+                {med.totalStock === 0 && <div className="out-of-stock-overlay">Out of Stock</div>}
               </div>
-              <span className="medicine-category">{med.category}</span>
-              <h4 className="medicine-name">{med.name}</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{med.manufacturer}</p>
               
-              <div className="medicine-footer">
-                <div className="price-container">
-                  <span className="medicine-price">₹{(med.price || 0).toFixed(2)}</span>
+              <div className="medicine-card-body">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span className="medicine-category">{med.category}</span>
+                  {med.totalStock > 0 && med.totalStock < 20 && (
+                    <span style={{ fontSize: '0.65rem', color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                      Only {med.totalStock} left
+                    </span>
+                  )}
                 </div>
-                <button 
-                  className="add-to-cart-btn" 
-                  onClick={() => handleAddToCart(med)}
-                >
-                  {addedItems[med.id] ? <Check size={20} /> : <Plus size={20} />}
-                </button>
+                
+                <h4 className="medicine-name">{med.name}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <p className="medicine-manufacturer">{med.manufacturer}</p>
+                  <span style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 600 }}>Exp: {med.expiryDate || 'N/A'}</span>
+                </div>
+                <p className="medicine-desc">{med.description?.substring(0, 60)}...</p>
+                
+                <div className="medicine-footer">
+                  <div className="price-container">
+                    {med.discountedPrice && parseFloat(med.discountedPrice) > 0 ? (
+                      <>
+                        <span className="medicine-price">₹{parseFloat(med.discountedPrice).toFixed(2)}</span>
+                        <span className="original-price">₹{parseFloat(med.price || 0).toFixed(2)}</span>
+                      </>
+                    ) : (
+                      <span className="medicine-price">₹{parseFloat(med.price || 0).toFixed(2)}</span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    className="add-to-cart-btn" 
+                    onClick={() => handleAddToCart(med)}
+                    disabled={med.totalStock === 0}
+                    title={med.totalStock === 0 ? "Out of Stock" : "Add to Cart"}
+                  >
+                    {addedItems[med.id] ? <Check size={20} /> : <Plus size={20} />}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

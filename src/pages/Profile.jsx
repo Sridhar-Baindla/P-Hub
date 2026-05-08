@@ -108,6 +108,11 @@ const Profile = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: order.status === 'Confirmed' ? 'var(--success)' : 'var(--primary)', fontWeight: 600 }}>
                           {order.status === 'Confirmed' ? <CheckCircle size={16} /> : <Clock size={16} />}
                           {order.status}
+                          {order.deliveryStatus && (
+                            <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', marginLeft: '0.5rem' }}>
+                              {order.deliveryStatus}
+                            </span>
+                          )}
                         </div>
                         <button 
                           onClick={() => generateInvoice(order)}
@@ -117,7 +122,17 @@ const Profile = () => {
                         </button>
                       </div>
                     </div>
+
+                    {order.otp && order.deliveryStatus === 'Approved' && (
+                      <div style={{ background: 'rgba(249, 115, 22, 0.05)', border: '1px dashed var(--primary)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '1rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>DELIVERY VERIFICATION OTP</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '4px', color: 'var(--primary)' }}>{order.otp}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Share this with the delivery partner to confirm handover</div>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+
                       {order.items.map((item, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                           <span>{item.name} x {item.quantity}</span>

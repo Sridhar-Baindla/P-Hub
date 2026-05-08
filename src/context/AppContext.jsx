@@ -88,22 +88,26 @@ export const AppProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Clear state and storage immediately for instant UI feedback
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('warehouseAdmin'); // Cleanup any legacy keys
+    
+    // Perform session cleanup in background
     if (user) {
       const deviceId = getDeviceId();
       try {
         const res = await fetch(`${API_URL}/sessions?userId=${user.id}&deviceId=${deviceId}`);
         const sessions = await res.json();
-        if (sessions.length > 0) {
+        if (Array.isArray(sessions) && sessions.length > 0) {
           await fetch(`${API_URL}/sessions/${sessions[0].id}`, { method: 'DELETE' });
         }
       } catch (error) {
         console.error('Error removing session on logout:', error);
       }
     }
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   const authenticatedFetch = (url, options = {}) => {

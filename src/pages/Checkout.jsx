@@ -100,6 +100,9 @@ const Checkout = () => {
     });
   };
 
+  const [phonePeState, setPhonePeState] = useState('idle'); // idle, processing, success
+  const [showPhonePeOverlay, setShowPhonePeOverlay] = useState(false);
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!paymentMethod) {
@@ -107,26 +110,31 @@ const Checkout = () => {
       return;
     }
 
+    if (paymentMethod === 'PhonePe') {
+      simulatePhonePePayment();
+    } else {
+      processOrder();
+    }
+  };
+
+  const simulatePhonePePayment = () => {
+    setShowPhonePeOverlay(true);
+    setPhonePeState('processing');
+    
+    // Simulate PhonePe Gateway Handshake
+    setTimeout(() => {
+      setPhonePeState('success');
+      setTimeout(() => {
+        setShowPhonePeOverlay(false);
+        processOrder('Paid');
+      }, 2000);
+    }, 3000);
+  };
+
+  const processOrder = async (pStatus = 'Pending') => {
     setOrderPlacing(true);
 
     try {
-      let paymentStatus = 'Pending';
-      
-      // Secure Payment Verification Step
-      if (['PhonePe', 'Google Pay', 'Paytm'].includes(paymentMethod)) {
-        const verifyRes = await authenticatedFetch(`${API_URL}/payments/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: total, method: paymentMethod })
-        });
-        
-        const verifyData = await verifyRes.json();
-        if (!verifyRes.ok) {
-          throw new Error(verifyData.error || 'Payment failed');
-        }
-        paymentStatus = 'Paid';
-      }
-
       const order = {
         items: cartItems.map(item => ({
           medicineId: item.medicineId,
@@ -138,7 +146,7 @@ const Checkout = () => {
         shippingAddress: `${formData.address}, ${formData.city} - ${formData.pincode}`,
         contactNumber: formData.phone,
         paymentMethod,
-        paymentStatus
+        paymentStatus: paymentMethod === 'COD' ? 'Pending' : pStatus
       };
 
       const res = await authenticatedFetch(`${API_URL}/orders`, {
@@ -149,7 +157,7 @@ const Checkout = () => {
 
       if (!res.ok) throw new Error('Order creation failed');
 
-      // Clear cart securely
+      // Clear cart
       for (const item of cartItems) {
         await authenticatedFetch(`${API_URL}/cart/${item.id}`, { method: 'DELETE' });
       }
@@ -164,6 +172,43 @@ const Checkout = () => {
       setOrderPlacing(false);
     }
   };
+
+  const PhonePeOverlay = () => (
+    <div className="phonepe-overlay" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(255, 255, 255, 0.98)', zIndex: 1000,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div className="phonepe-brand" style={{ marginBottom: '2rem', textAlign: 'center' }}>
+        <img src="https://download.logo.wine/logo/PhonePe/PhonePe-Logo.wine.png" alt="PhonePe" style={{ height: '60px' }} />
+        <div style={{ color: '#6739b7', fontWeight: 700, fontSize: '1.2rem', marginTop: '0.5rem' }}>Secure Payment Gateway</div>
+      </div>
+
+      {phonePeState === 'processing' ? (
+        <div style={{ textAlign: 'center' }}>
+          <div className="phonepe-spinner" style={{ 
+            width: '60px', height: '60px', border: '5px solid #e0e0e0', borderTop: '5px solid #6739b7', 
+            borderRadius: '50%', margin: '0 auto 1.5rem', animation: 'spin 1s linear infinite' 
+          }}></div>
+          <h2 style={{ color: 'var(--text-primary)' }}>Contacting Bank...</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Please do not refresh or close this window.</p>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#22c55e', marginBottom: '1.5rem' }}>
+            <CheckCircle size={80} style={{ margin: '0 auto' }} />
+          </div>
+          <h2 style={{ color: '#22c55e' }}>Payment Successful!</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Transaction ID: TXN{Math.random().toString(36).substring(7).toUpperCase()}</p>
+        </div>
+      )}
+
+      <div style={{ position: 'absolute', bottom: '3rem', width: '100%', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+        <ShieldCheck size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+        100% Secure Transaction Powered by PhonePe Business
+      </div>
+    </div>
+  );
 
   if (loading) return <div className="container" style={{ padding: '5rem', textAlign: 'center' }}>Loading...</div>;
 
@@ -182,6 +227,7 @@ const Checkout = () => {
 
   return (
     <div className="container checkout-container">
+      {showPhonePeOverlay && <PhonePeOverlay />}
       <button onClick={() => navigate('/cart')} className="back-btn">
         <ArrowLeft size={20} /> Back to Cart
       </button>

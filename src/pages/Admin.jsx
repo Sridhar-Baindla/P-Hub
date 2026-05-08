@@ -12,7 +12,8 @@ import {
   Trash2, 
   X,
   UploadCloud,
-  Users
+  Users,
+  Activity
 } from 'lucide-react';
 import './Admin.css';
 import { API_URL } from '../config';
@@ -25,13 +26,92 @@ const INITIAL_INVENTORY = [
   { id: 4, name: 'Ibuprofen 400mg', category: 'Pain Relief', stock: 0, price: 8.49, status: 'Out of Stock' },
 ];
 
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+
 const Admin = () => {
   const { user } = useContext(AppContext);
-  const [activeTab, setActiveTab] = useState('inventory');
-  const [inventory, setInventory] = useState(INITIAL_INVENTORY);
+  const [activeTab, setActiveTab] = useState('billing');
+  const [inventory, setInventory] = useState([]);
   const [managers, setManagers] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
+  const [billingCart, setBillingCart] = useState([]);
+  const [billingSearchQuery, setBillingSearchQuery] = useState('');
+  const [billCustomer, setBillCustomer] = useState({ name: '', phone: '' });
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const { subtotal, tax, total } = calculateTotal();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(37, 99, 235); // Primary color
+    doc.text('PHUB PHARMACY', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Digital Healthcare Simplified', 14, 26);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 20);
+    doc.text(`Invoice #: INV-${Date.now().toString().slice(-6)}`, 150, 26);
+
+    // Customer Info
+    doc.setDrawColor(230);
+    doc.line(14, 35, 196, 35);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('BILL TO:', 14, 45);
+    doc.setFontSize(10);
+    doc.text(`Name: ${billCustomer.name || 'Walk-in Customer'}`, 14, 52);
+    doc.text(`Phone: ${billCustomer.phone || 'N/A'}`, 14, 57);
+
+    // Table
+    const tableData = billingCart.map(item => [
+      item.name,
+      item.category,
+      `INR ${item.price.toFixed(2)}`,
+      item.quantity,
+      `INR ${(item.price * item.quantity).toFixed(2)}`
+    ]);
+
+    doc.autoTable({
+      startY: 65,
+      head: [['Medicine Name', 'Category', 'Unit Price', 'Qty', 'Total']],
+      body: tableData,
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: [245, 247, 250] }
+    });
+
+    // Summary
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 140, finalY);
+    doc.text(`GST (12%): INR ${tax.toFixed(2)}`, 140, finalY + 7);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Grand Total: INR ${total.toFixed(2)}`, 140, finalY + 16);
+
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(150);
+    doc.text('Thank you for choosing PHUB Pharmacy!', 105, finalY + 30, { align: 'center' });
+
+    doc.save(`Invoice_${billCustomer.name || 'Customer'}.pdf`);
+  };
   
+  const [orders, setOrders] = useState([]);
+  
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = () => {
+    fetch(`${API_URL}/medicines`)
+      .then(res => res.json())
+      .then(data => setInventory(data))
+      .catch(err => console.error(err));
+  };
+
   useEffect(() => {
     if (activeTab === 'prescriptions') {
       fetch(`${API_URL}/prescriptions`)
@@ -45,7 +125,68 @@ const Admin = () => {
         .then(data => setManagers(data))
         .catch(err => console.error(err));
     }
+    if (activeTab === 'orders') {
+       const { token } = JSON.parse(localStorage.getItem('user_full_data') || '{}'); // Wait, AppContext has it
+       // Since I don't have direct access to token here easily without passing it or using context properly
+       // I'll use a fetch that includes the token if possible.
+       // Actually, I'll just use the authenticatedFetch if I can, but Admin.jsx doesn't have it yet.
+       // I'll add it.
+    }
   }, [activeTab]);
+
+  // For simplicity in this demo environment, I'll just fetch orders normally if the server allows or I'll fix the server.
+  // I already updated the server to check for admin role.
+  
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      const storedToken = localStorage.getItem('token');
+      fetch(`${API_URL}/orders`, {
+        headers: { 'Authorization': `Bearer ${storedToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setOrders(Array.isArray(data) ? data : []))
+        .catch(err => console.error(err));
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      const storedToken = localStorage.getItem('token');
+      fetch(`${API_URL}/admin/stats`, {
+        headers: { 'Authorization': `Bearer ${storedToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setDashboardStats(data))
+        .catch(err => console.error(err));
+    }
+  }, [activeTab]);
+
+  const addToBilling = (med) => {
+    setBillingCart(prev => {
+      const exists = prev.find(item => item.id === med.id);
+      if (exists) {
+        return prev.map(item => item.id === med.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...med, quantity: 1 }];
+    });
+  };
+
+  const removeFromBilling = (id) => {
+    setBillingCart(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateBillQty = (id, delta) => {
+    setBillingCart(prev => prev.map(item => 
+      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+    ));
+  };
+
+  const calculateTotal = () => {
+    const subtotal = billingCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const tax = subtotal * 0.12; // 12% GST
+    return { subtotal, tax, total: subtotal + tax };
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
@@ -57,32 +198,53 @@ const Admin = () => {
   const handleSaveMedicine = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const newItem = {
-      id: editingItem ? editingItem.id : Date.now(),
+    const medData = {
       name: formData.get('name'),
       category: formData.get('category'),
-      stock: parseInt(formData.get('stock')),
       price: parseFloat(formData.get('price')),
-      status: parseInt(formData.get('stock')) > 20 ? 'In Stock' : parseInt(formData.get('stock')) > 0 ? 'Low Stock' : 'Out of Stock'
+      manufacturer: formData.get('manufacturer') || 'PHUB Pharma',
+      description: formData.get('description') || '',
+      inStock: parseInt(formData.get('stock')) > 0,
+      image: '/placeholder-medicine.jpg' // In a real app, this would be an uploaded URL
     };
 
-    if (editingItem) {
-      setInventory(inventory.map(item => item.id === editingItem.id ? newItem : item));
-    } else {
-      setInventory([...inventory, newItem]);
-    }
-    setIsModalOpen(false);
+    const method = editingItem ? 'PATCH' : 'POST';
+    const url = editingItem ? `${API_URL}/medicines/${editingItem.id}` : `${API_URL}/medicines`;
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(medData)
+    }).then(() => {
+      fetchInventory();
+      setIsModalOpen(false);
+    });
   };
 
   const handleDelete = (id) => {
     if(window.confirm('Are you sure you want to delete this medicine?')) {
-      setInventory(inventory.filter(item => item.id !== id));
+      fetch(`${API_URL}/medicines/${id}`, { method: 'DELETE' })
+        .then(() => fetchInventory());
     }
   };
 
   if (!user || user.role !== 'admin') {
     return <Navigate to="/admin/login" replace />;
   }
+
+  const [dashboardStats, setDashboardStats] = useState({
+    totalSales: 125400,
+    activeOrders: 42,
+    totalPatients: 1205,
+    pendingRx: 8
+  });
+
+  const { subtotal, tax, total } = calculateTotal();
+
+  const filteredInventory = inventory.filter(med => 
+    med.name.toLowerCase().includes(billingSearchQuery.toLowerCase()) ||
+    med.category.toLowerCase().includes(billingSearchQuery.toLowerCase())
+  );
 
   return (
     <div className="admin-layout">
@@ -95,16 +257,22 @@ const Admin = () => {
           <LayoutDashboard size={20} /> Dashboard
         </div>
         <div 
-          className={`admin-nav-item ${activeTab === 'inventory' ? 'active' : ''}`}
-          onClick={() => setActiveTab('inventory')}
+          className={`admin-nav-item ${activeTab === 'billing' ? 'active' : ''}`}
+          onClick={() => setActiveTab('billing')}
         >
-          <Package size={20} /> Inventory Manager
+          <ShoppingCart size={20} /> Fast Billing
         </div>
         <div 
           className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`}
           onClick={() => setActiveTab('orders')}
         >
-          <ShoppingCart size={20} /> Order Operations
+          <Activity size={20} /> Order Operations
+        </div>
+        <div 
+          className={`admin-nav-item ${activeTab === 'inventory' ? 'active' : ''}`}
+          onClick={() => setActiveTab('inventory')}
+        >
+          <Package size={20} /> Inventory Manager
         </div>
         <div 
           className={`admin-nav-item ${activeTab === 'prescriptions' ? 'active' : ''}`}
@@ -125,6 +293,265 @@ const Admin = () => {
 
       {/* Main Content */}
       <main className="admin-main">
+        {activeTab === 'dashboard' && (
+          <div className="dashboard-content">
+            <div className="admin-header">
+              <div>
+                <h1>Dashboard Overview</h1>
+                <p>Welcome back, Admin. Here's what's happening today.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="btn btn-secondary" onClick={() => setActiveTab('billing')}>
+                  <ShoppingCart size={20} /> Fast Billing
+                </button>
+                <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+                  <Plus size={20} /> Add Medicine
+                </button>
+              </div>
+            </div>
+
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div className="stat-card" style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Daily Sales</p>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>₹{dashboardStats.totalSales.toLocaleString()}</h2>
+                <p style={{ color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.5rem' }}>+12.5% from yesterday</p>
+              </div>
+              <div className="stat-card" style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Total Patients</p>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{dashboardStats.totalPatients}</h2>
+                <p style={{ color: 'var(--primary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>24 new today</p>
+              </div>
+              <div className="stat-card" style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Active Orders</p>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{dashboardStats.activeOrders}</h2>
+                <p style={{ color: 'var(--warning)', fontSize: '0.8rem', marginTop: '0.5rem' }}>5 urgent deliveries</p>
+              </div>
+              <div className="stat-card" style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Pending Rx</p>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{dashboardStats.pendingRx}</h2>
+                <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '0.5rem' }}>Requires approval</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+               <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                  <h3 style={{ marginBottom: '1rem' }}>Recent Activity</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {[1,2,3].map(i => (
+                      <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'center', paddingBottom: '1rem', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ShoppingCart size={20} />
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 500, fontSize: '0.9rem' }}>New order #OR-554{i} placed</p>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{i*5} mins ago • ₹{(Math.random()*1000).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+               <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                  <h3 style={{ marginBottom: '1rem' }}>Quick Actions</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <button onClick={() => setActiveTab('billing')} style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                      <ShoppingCart size={24} style={{ color: 'var(--primary)', marginBottom: '0.5rem' }} />
+                      <div style={{ fontWeight: 600 }}>Fast Billing</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Generate instant invoice</div>
+                    </button>
+                    <button onClick={() => setActiveTab('inventory')} style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', textAlign: 'left' }}>
+                      <Package size={24} style={{ color: 'var(--success)', marginBottom: '0.5rem' }} />
+                      <div style={{ fontWeight: 600 }}>Manage Stock</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Update medicine levels</div>
+                    </button>
+                    <button onClick={() => setActiveTab('prescriptions')} style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', textAlign: 'left' }}>
+                      <FileText size={24} style={{ color: 'var(--warning)', marginBottom: '0.5rem' }} />
+                      <div style={{ fontWeight: 600 }}>Approve Rx</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Review prescriptions</div>
+                    </button>
+                    <button style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', textAlign: 'left' }}>
+                      <Users size={24} style={{ color: 'var(--info)', marginBottom: '0.5rem' }} />
+                      <div style={{ fontWeight: 600 }}>User Insights</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>View patient database</div>
+                    </button>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'billing' && (
+          <div className="billing-container" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem', height: 'calc(100vh - 100px)' }}>
+            <div className="billing-inventory">
+              <div className="admin-header" style={{ marginBottom: '1.5rem' }}>
+                <div>
+                  <h1>Fast Billing (POS)</h1>
+                  <p>Search and add medicines to create instant invoices.</p>
+                </div>
+              </div>
+              
+              <div className="search-bar" style={{ marginBottom: '2rem', maxWidth: '100%' }}>
+                <LayoutDashboard size={20} />
+                <input 
+                  type="text" 
+                  placeholder="Search medicine by name or category..." 
+                  value={billingSearchQuery}
+                  onChange={(e) => setBillingSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="billing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem', overflowY: 'auto', maxHeight: 'calc(100vh - 300px)', paddingRight: '0.5rem' }}>
+                {filteredInventory.map(med => (
+                  <div key={med.id} className="billing-item-card" onClick={() => addToBilling(med)} style={{ 
+                    padding: '1rem', 
+                    borderRadius: 'var(--radius-lg)', 
+                    background: 'var(--surface)', 
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <h4 style={{ marginBottom: '0.25rem' }}>{med.name}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>{med.manufacturer}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--primary)' }}>INR {med.price.toFixed(2)}</span>
+                      <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-full)', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}>
+                        In Stock
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="billing-summary" style={{ background: 'var(--surface)', borderRadius: '2rem', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                <h3>Current Invoice</h3>
+              </div>
+              
+              <div className="bill-items" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+                {billingCart.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                    <ShoppingCart size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                    <p>No items added to bill yet.</p>
+                  </div>
+                ) : (
+                  billingCart.map(item => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.5rem', borderRadius: 'var(--radius-md)', background: 'var(--background)' }}>
+                      <div>
+                        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>INR {item.price.toFixed(2)} x {item.quantity}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button onClick={(e) => { e.stopPropagation(); updateBillQty(item.id, -1); }} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white' }}>-</button>
+                        <span>{item.quantity}</span>
+                        <button onClick={(e) => { e.stopPropagation(); updateBillQty(item.id, 1); }} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white' }}>+</button>
+                        <button onClick={(e) => { e.stopPropagation(); removeFromBilling(item.id); }} style={{ marginLeft: '0.5rem', color: 'var(--danger)', border: 'none', background: 'none' }}><Trash2 size={16} /></button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div style={{ padding: '1.5rem', background: 'var(--background)', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Subtotal</span>
+                    <span>INR {subtotal.toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <span>GST (12%)</span>
+                    <span>INR {tax.toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.2rem', marginTop: '0.5rem', color: 'var(--primary)' }}>
+                    <span>Grand Total</span>
+                    <span>INR {total.toFixed(2)}</span>
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                   <input 
+                    type="text" 
+                    placeholder="Customer Name" 
+                    className="input-field" 
+                    style={{ marginBottom: '0.5rem', borderRadius: 'var(--radius-md)' }}
+                    value={billCustomer.name}
+                    onChange={(e) => setBillCustomer({...billCustomer, name: e.target.value})}
+                   />
+                   <input 
+                    type="text" 
+                    placeholder="Phone Number" 
+                    className="input-field" 
+                    style={{ borderRadius: 'var(--radius-md)' }}
+                    value={billCustomer.phone}
+                    onChange={(e) => setBillCustomer({...billCustomer, phone: e.target.value})}
+                   />
+                </div>
+
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                  onClick={generatePDF}
+                  disabled={billingCart.length === 0}
+                >
+                  <FileText size={20} /> Print Invoice
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <>
+            <div className="admin-header">
+              <div>
+                <h1>Order Operations</h1>
+                <p style={{ color: 'var(--text-secondary)' }}>Track and manage all customer transactions.</p>
+              </div>
+            </div>
+
+            <div className="data-table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Transaction ID</th>
+                    <th>Date</th>
+                    <th>Customer Info</th>
+                    <th>Total Items</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(order => (
+                    <tr key={order.id}>
+                      <td style={{ fontWeight: 600 }}>#{order.id}</td>
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{order.transactionId}</td>
+                      <td>{new Date(order.orderDate).toLocaleDateString()}</td>
+                      <td>
+                         <div style={{ fontWeight: 500 }}>{order.contactNumber}</div>
+                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.shippingAddress}</div>
+                      </td>
+                      <td>{order.items?.length || 0} items</td>
+                      <td style={{ fontWeight: 600, color: 'var(--primary)' }}>INR {order.totalAmount.toFixed(2)}</td>
+                      <td><span className="badge badge-success">{order.status}</span></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>View Details</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {orders.length === 0 && (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No orders found in the database.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+
         {activeTab === 'inventory' && (
           <>
             <div className="admin-header">
@@ -150,33 +577,45 @@ const Admin = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {inventory.map(item => (
-                    <tr key={item.id}>
-                      <td style={{ fontWeight: 500 }}>{item.name}</td>
-                      <td>{item.category}</td>
-                      <td>₹{item.price.toFixed(2)}</td>
-                      <td>{item.stock} units</td>
-                      <td>
-                        <span className={`badge ${item.status === 'In Stock' ? 'badge-success' : item.status === 'Low Stock' ? '' : ''}`} 
-                              style={{ 
-                                background: item.status === 'Out of Stock' ? 'rgba(239, 68, 68, 0.1)' : item.status === 'Low Stock' ? 'rgba(245, 158, 11, 0.1)' : '',
-                                color: item.status === 'Out of Stock' ? 'var(--danger)' : item.status === 'Low Stock' ? 'var(--warning)' : ''
-                              }}>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
-                          <button className="action-btn" onClick={() => handleOpenModal(item)}>
-                            <Edit2 size={18} />
-                          </button>
-                          <button className="action-btn delete" onClick={() => handleDelete(item.id)}>
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {inventory.map(item => {
+                    const status = (item.totalStock || 0) === 0 ? 'Out of Stock' : (item.totalStock || 0) < 20 ? 'Low Stock' : 'In Stock';
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ fontWeight: 500 }}>{item.name}</td>
+                        <td>{item.category}</td>
+                        <td>
+                          {item.discountedPrice ? (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>₹{item.discountedPrice}</span>
+                              <span style={{ fontSize: '0.75rem', textDecoration: 'line-through', color: 'var(--text-secondary)' }}>₹{item.price}</span>
+                            </div>
+                          ) : (
+                            <span>₹{item.price}</span>
+                          )}
+                        </td>
+                        <td>{item.totalStock || 0} units</td>
+                        <td>
+                          <span className={`badge ${status === 'In Stock' ? 'badge-success' : status === 'Low Stock' ? '' : ''}`} 
+                                style={{ 
+                                  background: status === 'Out of Stock' ? 'rgba(239, 68, 68, 0.1)' : status === 'Low Stock' ? 'rgba(245, 158, 11, 0.1)' : '',
+                                  color: status === 'Out of Stock' ? 'var(--danger)' : status === 'Low Stock' ? 'var(--warning)' : ''
+                                }}>
+                            {status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                            <button className="action-btn" onClick={() => handleOpenModal(item)}>
+                              <Edit2 size={18} />
+                            </button>
+                            <button className="action-btn delete" onClick={() => handleDelete(item.id)}>
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
