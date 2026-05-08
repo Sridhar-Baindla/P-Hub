@@ -58,7 +58,7 @@ const Cart = () => {
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.medicine.price * item.quantity), 0);
-  const deliveryFee = 50.00;
+  const deliveryFee = 0.00;
   const total = subtotal + deliveryFee;
 
   if (loading) return <div className="container" style={{ padding: '5rem', textAlign: 'center' }}>Loading...</div>;
@@ -117,7 +117,7 @@ const Cart = () => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Delivery Fee</span>
-            <span>₹{deliveryFee.toFixed(2)}</span>
+            <span style={{ color: 'var(--success)', fontWeight: 600 }}>FREE</span>
           </div>
           <div style={{ margin: '1rem 0', height: '1px', background: 'var(--border)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', fontWeight: 700, fontSize: '1.25rem' }}>

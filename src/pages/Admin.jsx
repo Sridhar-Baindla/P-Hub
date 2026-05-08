@@ -27,7 +27,8 @@ const INITIAL_INVENTORY = [
 ];
 
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+import logo from '../assets/logo.png';
 
 const Admin = () => {
   const { user } = useContext(AppContext);
@@ -40,63 +41,97 @@ const Admin = () => {
   const [billCustomer, setBillCustomer] = useState({ name: '', phone: '' });
 
   const generatePDF = () => {
-    const doc = new jsPDF();
-    const { subtotal, tax, total } = calculateTotal();
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(37, 99, 235); // Primary color
-    doc.text('PHUB PHARMACY', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Digital Healthcare Simplified', 14, 26);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 20);
-    doc.text(`Invoice #: INV-${Date.now().toString().slice(-6)}`, 150, 26);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const { subtotal, tax, total } = calculateTotal();
+      
+      // Professional Theme Colors (Clean & Minimalist)
+      const primaryColor = [31, 41, 55]; // Dark Slate
+      const accentColor = [37, 99, 235];  // PHUB Blue
 
-    // Customer Info
-    doc.setDrawColor(230);
-    doc.line(14, 35, 196, 35);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('BILL TO:', 14, 45);
-    doc.setFontSize(10);
-    doc.text(`Name: ${billCustomer.name || 'Walk-in Customer'}`, 14, 52);
-    doc.text(`Phone: ${billCustomer.phone || 'N/A'}`, 14, 57);
+      // 1. Clean Header
+      const logoSize = 20;
+      doc.addImage(logo, 'PNG', 14, 15, logoSize, logoSize);
+      
+      doc.setFontSize(22);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PHUB PHARMACY', 14 + logoSize + 4, 25);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text('Digital Healthcare Simplified', 14 + logoSize + 4, 31);
+      
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 14, 25, { align: 'right' });
+      doc.text(`Inv #: ${Date.now().toString().slice(-6)}`, pageWidth - 14, 31, { align: 'right' });
 
-    // Table
-    const tableData = billingCart.map(item => [
-      item.name,
-      item.category,
-      `INR ${item.price.toFixed(2)}`,
-      item.quantity,
-      `INR ${(item.price * item.quantity).toFixed(2)}`
-    ]);
+      doc.setDrawColor(229, 231, 235);
+      doc.line(14, 40, pageWidth - 14, 40);
 
-    doc.autoTable({
-      startY: 65,
-      head: [['Medicine Name', 'Category', 'Unit Price', 'Qty', 'Total']],
-      body: tableData,
-      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255] },
-      alternateRowStyles: { fillColor: [245, 247, 250] }
-    });
+      // 2. Customer Info
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BILL TO:', 14, 52);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Name: ${billCustomer.name || 'Walk-in Customer'}`, 14, 59);
+      doc.text(`Phone: ${billCustomer.phone || 'N/A'}`, 14, 64);
 
-    // Summary
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Subtotal: INR ${subtotal.toFixed(2)}`, 140, finalY);
-    doc.text(`GST (12%): INR ${tax.toFixed(2)}`, 140, finalY + 7);
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Grand Total: INR ${total.toFixed(2)}`, 140, finalY + 16);
+      // 3. Table
+      const tableData = billingCart.map(item => [
+        item.name,
+        item.category,
+        `Rs. ${item.price.toFixed(2)}`,
+        item.quantity,
+        `Rs. ${(item.price * item.quantity).toFixed(2)}`
+      ]);
 
-    // Footer
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(150);
-    doc.text('Thank you for choosing PHUB Pharmacy!', 105, finalY + 30, { align: 'center' });
+      autoTable(doc, {
+        startY: 75,
+        head: [['Medicine Name', 'Category', 'Price', 'Qty', 'Total']],
+        body: tableData,
+        theme: 'plain',
+        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 10 },
+        bodyStyles: { fillColor: null },
+        styles: { fontSize: 9, lineWidth: 0.1, lineColor: [230, 230, 230] }
+      });
 
-    doc.save(`Invoice_${billCustomer.name || 'Customer'}.pdf`);
+      // 4. Summary
+      // @ts-ignore
+      const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 100) + 10;
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Subtotal:`, pageWidth - 60, finalY);
+      doc.setTextColor(0);
+      doc.text(`Rs. ${subtotal.toFixed(2)}`, pageWidth - 14, finalY, { align: 'right' });
+      
+      doc.setTextColor(100);
+      doc.text(`GST (12%):`, pageWidth - 60, finalY + 7);
+      doc.setTextColor(0);
+      doc.text(`Rs. ${tax.toFixed(2)}`, pageWidth - 14, finalY + 7, { align: 'right' });
+
+      doc.setFontSize(13);
+      doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Grand Total:`, pageWidth - 60, finalY + 16);
+      doc.text(`Rs. ${total.toFixed(2)}`, pageWidth - 14, finalY + 16, { align: 'right' });
+
+      // 5. Footer
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(150);
+      doc.text('Thank you for choosing PHUB Pharmacy!', pageWidth / 2, finalY + 30, { align: 'center' });
+
+      doc.save(`Invoice_${billCustomer.name || 'Customer'}.pdf`);
+    } catch (error) {
+      console.error("Error generating admin PDF:", error);
+      alert("Error printing invoice: " + error.message);
+    }
   };
   
   const [orders, setOrders] = useState([]);

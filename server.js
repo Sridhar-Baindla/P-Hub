@@ -122,6 +122,15 @@ const initDb = () => {
       uploadedAt TEXT
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId INTEGER,
+      message TEXT,
+      read BOOLEAN DEFAULT 0,
+      createdAt TEXT,
+      FOREIGN KEY(userId) REFERENCES users(id)
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS warehouseAdmins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
@@ -417,10 +426,11 @@ app.delete('/cart/:id', authenticateToken, (req, res) => {
 // Protected Order Routes
 app.get('/orders', authenticateToken, (req, res) => {
   const isAdmin = req.user.role === 'admin';
+  const isWarehouse = req.user.role === 'warehouse_manager';
   let query = "SELECT * FROM orders";
   let params = [];
 
-  if (!isAdmin) {
+  if (!isAdmin && !isWarehouse) {
     query += " WHERE userId = ?";
     params.push(req.user.id);
   }
@@ -478,19 +488,44 @@ app.post('/orders', authenticateToken, (req, res) => {
 });
 
 app.post('/orders/:id/approve', authenticateToken, (req, res) => {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  db.run("UPDATE orders SET otp = ?, deliveryStatus = ? WHERE id = ?", [otp, 'Approved', req.params.id], function (err) {
+  // Generate a random 4-digit OTP
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+  
+  // First, find the order to get the userId
+  db.get("SELECT userId FROM orders WHERE id = ?", [req.params.id], (err, order) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true, otp });
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    // Update order with OTP and status
+    db.run("UPDATE orders SET otp = ?, deliveryStatus = ? WHERE id = ?", [otp, 'Approved', req.params.id], function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      // Create notification for the user
+      const message = `Your order #${req.params.id} has been approved. Your delivery OTP is: ${otp}. Please share this with the delivery partner.`;
+      const createdAt = new Date().toISOString();
+      
+      db.run("INSERT INTO notifications (userId, message, read, createdAt) VALUES (?, ?, 0, ?)", 
+        [order.userId, message, createdAt], 
+        function(err) {
+          if (err) console.error("Notification error:", err);
+          
+          // Enhanced security: Do not send the OTP back to the frontend (warehouse manager)
+          res.json({ success: true, message: "Order approved and OTP sent to customer." });
+        }
+      );
+    });
   });
 });
 
 app.post('/orders/:id/verify-otp', authenticateToken, (req, res) => {
-  const { otp } = req.body;
+  const { otp, skipOTP } = req.body;
+  const isAuthorized = req.user.role === 'warehouse_manager' || req.user.role === 'admin';
+
   db.get("SELECT * FROM orders WHERE id = ?", [req.params.id], (err, order) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!order) return res.status(404).json({ error: "Order not found" });
-    if (order.otp === otp) {
+    
+    if (order.otp === otp || (skipOTP && isAuthorized)) {
       db.run("UPDATE orders SET deliveryStatus = ? WHERE id = ?", ['Delivered', req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
@@ -519,6 +554,25 @@ app.post('/prescriptions', (req, res) => {
       res.json({ id: this.lastID, ...req.body, uploadedAt });
     }
   );
+});
+
+// Notifications Routes
+app.get('/notifications', (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  
+  db.all("SELECT * FROM notifications WHERE userId = ? ORDER BY id DESC", [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.patch('/notifications/:id', (req, res) => {
+  const { read } = req.body;
+  db.run("UPDATE notifications SET read = ? WHERE id = ?", [read ? 1 : 0, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
 });
 
 // Warehouse Admin Routes

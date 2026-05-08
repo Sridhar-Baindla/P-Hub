@@ -116,9 +116,24 @@ const Profile = () => {
                         </div>
                         <button 
                           onClick={() => generateInvoice(order)}
-                          style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}
+                          style={{ 
+                            background: 'rgba(37, 99, 235, 0.1)', 
+                            border: 'none', 
+                            color: 'var(--primary)', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.4rem', 
+                            marginTop: '0.75rem', 
+                            fontSize: '0.85rem', 
+                            fontWeight: 600,
+                            padding: '0.5rem 1rem',
+                            borderRadius: 'var(--radius-md)',
+                            transition: 'all 0.2s'
+                          }}
+                          title="Download PDF Invoice"
                         >
-                          <Download size={16} /> Download Invoice
+                          <Download size={14} /> Download Invoice
                         </button>
                       </div>
                     </div>

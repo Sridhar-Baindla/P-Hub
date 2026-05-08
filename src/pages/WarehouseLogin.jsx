@@ -1,5 +1,5 @@
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useContext, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Warehouse.css';
@@ -7,8 +7,12 @@ import './Warehouse.css';
 import { API_URL } from '../config';
 
 const WarehouseLogin = () => {
-  const { login, checkDeviceLimit } = useContext(AppContext);
+  const { user, login, checkDeviceLimit } = useContext(AppContext);
   const navigate = useNavigate();
+
+  if (user && user.role === 'warehouse_manager') {
+    return <Navigate to="/warehouse" replace />;
+  }
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

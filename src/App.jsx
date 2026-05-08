@@ -1,5 +1,7 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Pill } from 'lucide-react';
+import { useContext, useEffect } from 'react';
+import { AppContext } from './context/AppContext';
 import './App.css';
 import Header from './components/Header';
 import ScrollToTop from './components/ScrollToTop';
@@ -23,6 +25,15 @@ import Checkout from './pages/Checkout';
 
 
 function App() {
+  const { user } = useContext(AppContext);
+  const location = useLocation();
+
+  // Redirect warehouse manager to warehouse page if they try to access other routes
+  if (user && user.role === 'warehouse_manager' && !location.pathname.startsWith('/warehouse')) {
+    return <Navigate to="/warehouse" replace />;
+  }
+
+  const isWarehousePage = location.pathname.startsWith('/warehouse');
 
   return (
     <div className="app-container">
@@ -52,58 +63,60 @@ function App() {
         </Routes>
       </main>
 
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-col">
-              <div className="logo" style={{ marginBottom: '1rem' }}>
-                <Pill size={24} color="var(--primary)" />
-                P-Hub
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                Your complete digital health companion. Fast, safe, and smart medicine delivery.
-              </p>
-            </div>
-            
-            <div className="footer-col">
-              <h3>Services</h3>
-              <div className="footer-links">
-                <Link to="/medicines">Order Medicines</Link>
-                <Link to="/prescription">Upload Prescription</Link>
-              </div>
-            </div>
-
-            <div className="footer-col">
-              <h3>Company</h3>
-              <div className="footer-links">
-                <Link to="/about">About Us</Link>
-                <Link to="/contact">Contact</Link>
-              </div>
-            </div>
-
-            <div className="footer-col">
-              <h3>Contact</h3>
-              <div className="footer-links">
-                <p>
-                  <a href="tel:+916302349535" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Mobile: +91 6302349535</a>
+      {!isWarehousePage && (
+        <footer className="footer">
+          <div className="container">
+            <div className="footer-content">
+              <div className="footer-col">
+                <div className="logo" style={{ marginBottom: '1rem' }}>
+                  <Pill size={24} color="var(--primary)" />
+                  P-Hub
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  Your complete digital health companion. Fast, safe, and smart medicine delivery.
                 </p>
               </div>
-            </div>
 
-            <div className="footer-col">
-              <h3>Legal</h3>
-              <div className="footer-links">
-                <Link to="/privacy">Privacy Policy</Link>
-                <Link to="/terms">Terms of Service</Link>
-                <Link to="/returns">Return Policy</Link>
+              <div className="footer-col">
+                <h3>Services</h3>
+                <div className="footer-links">
+                  <Link to="/medicines">Order Medicines</Link>
+                  <Link to="/prescription">Upload Prescription</Link>
+                </div>
+              </div>
+
+              <div className="footer-col">
+                <h3>Company</h3>
+                <div className="footer-links">
+                  <Link to="/about">About Us</Link>
+                  <Link to="/contact">Contact</Link>
+                </div>
+              </div>
+
+              <div className="footer-col">
+                <h3>Contact</h3>
+                <div className="footer-links">
+                  <p>
+                    <a href="tel:+916302349535" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Mobile: +91 6302349535</a>
+                  </p>
+                </div>
+              </div>
+
+              <div className="footer-col">
+                <h3>Legal</h3>
+                <div className="footer-links">
+                  <Link to="/privacy">Privacy Policy</Link>
+                  <Link to="/terms">Terms of Service</Link>
+                  <Link to="/returns">Return Policy</Link>
+                </div>
               </div>
             </div>
+            <div className="footer-bottom">
+              <p>&copy; {new Date().getFullYear()} P-Hub. All rights reserved.</p>
+            </div>
           </div>
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} P-Hub. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import logoImg from '../assets/logo.png';
 import { API_URL } from '../config';
 
 const Header = () => {
-  const { user, logout, cartCount } = useContext(AppContext);
+  const { user, logout, cartCount, setShowProfile } = useContext(AppContext);
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -197,11 +197,17 @@ const Header = () => {
           {/* Login / User Profile */}
           {user ? (
             <div className="icon-wrapper" style={{ marginLeft: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Link to="/profile" style={{ textDecoration: 'none' }}>
-                <div className="user-avatar" title="Profile">
+              {user.role === 'warehouse_manager' ? (
+                <div onClick={() => setShowProfile(true)} className="user-avatar" title="Profile" style={{ cursor: 'pointer' }}>
                   {user.name.charAt(0)}
                 </div>
-              </Link>
+              ) : (
+                <Link to="/profile" style={{ textDecoration: 'none' }}>
+                  <div className="user-avatar" title="Profile">
+                    {user.name.charAt(0)}
+                  </div>
+                </Link>
+              )}
               <button onClick={handleLogout} className="icon-btn" aria-label="Logout" title="Logout" style={{ color: 'var(--accent)' }}>
                 <LogOut size={18} />
               </button>

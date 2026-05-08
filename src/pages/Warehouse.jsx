@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Package, MapPin, LogOut, Check, Plus, X, Edit2, UploadCloud, Search } from 'lucide-react';
+import { Package, MapPin, LogOut, Check, Plus, X, Edit2, UploadCloud, Search, User } from 'lucide-react';
 import './Warehouse.css';
 import { API_URL } from '../config';
 import { AppContext } from '../context/AppContext';
 
 const Warehouse = () => {
-  const { user: warehouseAdmin, logout: handleLogout } = useContext(AppContext);
+  const { user: warehouseAdmin, logout: handleLogout, showProfile, setShowProfile, token } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('inventory'); // inventory, orders
   const [orders, setOrders] = useState([]);
   const [otpInputs, setOtpInputs] = useState({});
@@ -79,7 +79,7 @@ const Warehouse = () => {
     }
   };
 
-  const verifyOTP = async (orderId) => {
+  const verifyOTP = async (orderId, auto = false) => {
     try {
       const res = await fetch(`${API_URL}/orders/${orderId}/verify-otp`, {
         method: 'POST',
@@ -87,7 +87,10 @@ const Warehouse = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}` 
         },
-        body: JSON.stringify({ otp: otpInputs[orderId] })
+        body: JSON.stringify({ 
+          otp: auto ? 'AUTO' : otpInputs[orderId],
+          skipOTP: auto 
+        })
       });
       if (res.ok) {
         setUpdateMsg('Order delivered successfully!');
@@ -111,7 +114,10 @@ const Warehouse = () => {
       const quantity = parseInt(newQuantity) || 0;
       const res = await fetch(`${API_URL}/stock/${stockId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ quantity })
       });
       
@@ -135,7 +141,10 @@ const Warehouse = () => {
         // 1. Update medicine details
         const medRes = await fetch(`${API_URL}/medicines/${editingStock.medicineId}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             name: newStock.name,
             description: newStock.description,
@@ -153,7 +162,10 @@ const Warehouse = () => {
         // 2. Update stock quantity
         const stockRes = await fetch(`${API_URL}/stock/${editingStock.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             quantity: parseInt(newStock.quantity) || 0
           })
@@ -166,7 +178,10 @@ const Warehouse = () => {
         // Unified creation flow
         const response = await fetch(`${API_URL}/admin/add-inventory`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             ...newStock,
             price: parseFloat(newStock.price) || 0,
@@ -250,7 +265,7 @@ const Warehouse = () => {
     }
   };
 
-  if (!warehouseAdmin) {
+  if (!warehouseAdmin || warehouseAdmin.role !== 'warehouse_manager') {
     return <Navigate to="/warehouse/login" replace />;
   }
 
@@ -270,18 +285,38 @@ const Warehouse = () => {
         <div className="container header-flex">
           <div className="store-info">
             <Package size={24} color="var(--primary)" />
-            <div>
-              <h2>{warehouseAdmin.location} Logistics Hub</h2>
-              <p>Active Manager: {warehouseAdmin.name}</p>
+            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem' }} onClick={() => setShowProfile(true)}>
+              <div className="manager-avatar" style={{ 
+                width: '32px', 
+                height: '32px', 
+                background: 'var(--primary-light)', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                color: 'var(--primary)',
+                fontWeight: 600
+              }}>
+                {warehouseAdmin.name.charAt(0)}
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{warehouseAdmin.location} Logistics Hub</h2>
+                <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--text-secondary)' }}>Active Manager: {warehouseAdmin.name}</p>
+              </div>
             </div>
           </div>
           <div className="header-nav">
              <button className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Inventory</button>
              <button className={`nav-link ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Fulfillment</button>
           </div>
-          <button onClick={handleLogout} className="logout-link">
-            <LogOut size={18} /> Logout
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button onClick={() => setShowProfile(true)} className="nav-link profile-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500 }}>
+              <User size={18} /> Profile
+            </button>
+            <button onClick={handleLogout} className="logout-link">
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -412,14 +447,14 @@ const Warehouse = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => (
+                  {orders.filter(o => o.status === 'Confirmed').map(order => (
                     <tr key={order.id} style={{ borderTop: '1px solid var(--border)' }}>
                       <td style={{ padding: '1rem' }}>#{order.id}</td>
                       <td style={{ padding: '1rem' }}>
                          <div style={{ fontWeight: 600 }}>{order.contactNumber}</div>
                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{order.shippingAddress}</div>
                       </td>
-                      <td style={{ padding: '1rem' }}>{JSON.parse(order.items || '[]').length} items</td>
+                      <td style={{ padding: '1rem' }}>{(order.items || []).length} items</td>
                       <td style={{ padding: '1rem', fontWeight: 600 }}>₹{order.totalAmount}</td>
                       <td style={{ padding: '1rem' }}>
                          <span className={`badge badge-${order.deliveryStatus === 'Approved' ? 'success' : order.deliveryStatus === 'Delivered' ? 'primary' : 'warning'}`}>
@@ -433,16 +468,8 @@ const Warehouse = () => {
                           </button>
                         ) : order.deliveryStatus === 'Approved' ? (
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <input 
-                              type="text" 
-                              placeholder="Enter OTP" 
-                              className="input-field" 
-                              style={{ width: '100px', padding: '0.4rem', borderRadius: '4px', border: '1px solid var(--border)' }}
-                              value={otpInputs[order.id] || ''}
-                              onChange={(e) => setOtpInputs({...otpInputs, [order.id]: e.target.value})}
-                            />
-                            <button className="btn btn-success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => verifyOTP(order.id)}>
-                              Verify & Deliver
+                            <button className="btn btn-success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => verifyOTP(order.id, true)}>
+                              Complete Handover (Auto-Verify)
                             </button>
                           </div>
                         ) : (
@@ -667,6 +694,52 @@ const Warehouse = () => {
                 {loading ? 'Processing...' : (editingStock ? 'Update Inventory' : 'Add to Inventory')}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfile && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <button className="modal-close" onClick={() => setShowProfile(false)}>
+              <X size={24} />
+            </button>
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              background: 'var(--primary-light)', 
+              borderRadius: '50%', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              color: 'var(--primary)',
+              fontSize: '2rem',
+              fontWeight: 700,
+              margin: '0 auto 1.5rem'
+            }}>
+              {warehouseAdmin.name.charAt(0)}
+            </div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Manager Profile</h2>
+            <div style={{ textAlign: 'left', background: 'var(--background)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
+                <div style={{ fontWeight: 600 }}>{warehouseAdmin.name}</div>
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Store Email</label>
+                <div style={{ fontWeight: 600 }}>{warehouseAdmin.email}</div>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Location</label>
+                <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <MapPin size={14} color="var(--primary)" /> {warehouseAdmin.location}
+                </div>
+              </div>
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={() => setShowProfile(false)}>
+              Close Profile
+            </button>
           </div>
         </div>
       )}

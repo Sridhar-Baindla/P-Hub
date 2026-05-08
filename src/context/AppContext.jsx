@@ -14,6 +14,7 @@ export const AppProvider = ({ children }) => {
   });
 
   const [cartCount, setCartCount] = useState(0);
+  const [showProfile, setShowProfile] = useState(false);
 
   const getDeviceId = () => {
     let deviceId = localStorage.getItem('deviceId');
@@ -130,7 +131,9 @@ export const AppProvider = ({ children }) => {
       fetchCartCount, 
       checkDeviceLimit, 
       getDeviceId,
-      authenticatedFetch 
+      authenticatedFetch,
+      showProfile,
+      setShowProfile
     }}>
       {children}
     </AppContext.Provider>

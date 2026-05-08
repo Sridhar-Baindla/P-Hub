@@ -67,7 +67,7 @@ const Checkout = () => {
   }, [user, token, navigate]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.medicine.price * item.quantity), 0);
-  const deliveryFee = 50.00;
+  const deliveryFee = 0.00;
   const total = subtotal + deliveryFee;
 
   const handleInputChange = (e) => {
@@ -332,7 +332,7 @@ const Checkout = () => {
             </div>
             <div className="summary-divider"></div>
             <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-            <div className="summary-row"><span>Delivery Fee</span><span>₹{deliveryFee.toFixed(2)}</span></div>
+            <div className="summary-row"><span>Delivery Fee</span><span style={{ color: 'var(--success)', fontWeight: 600 }}>FREE</span></div>
             <div className="summary-total"><span>Total Amount</span><span>₹{total.toFixed(2)}</span></div>
             
             <button 
