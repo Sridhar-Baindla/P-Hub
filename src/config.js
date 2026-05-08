@@ -4,18 +4,10 @@ const getApiUrl = () => {
 
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
-  // Use current hostname and protocol
-  const hostname = window.location.hostname || 'localhost';
-  const protocol = window.location.protocol;
-  
-  // Default development behavior
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5000';
-  }
-
-  // For small screens / mobile devices accessing via local IP
-  return `${protocol}//${hostname}:5000`;
+  // With Vite Proxy configured in vite.config.js, we should use relative paths
+  // This is the most robust way to handle multi-device access and deployments
+  return ''; 
 };
 
 export const API_URL = getApiUrl();
-console.log('PHUB API Connection:', API_URL);
+console.log('PHUB API Mode: Relative (via Proxy)');
