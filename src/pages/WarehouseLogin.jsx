@@ -34,12 +34,6 @@ const WarehouseLogin = () => {
       if (!res.ok) throw new Error(data.error || 'Login failed');
 
       const { token, admin } = data;
-      const canLogin = await checkDeviceLimit(admin.id);
-      if (!canLogin) {
-        setShowLimitPopup(true);
-        setLoading(false);
-        return;
-      }
 
       // Await login to ensure context and localStorage are fully updated
       await login(admin, token);
@@ -107,46 +101,6 @@ const WarehouseLogin = () => {
             {loading ? 'Authenticating...' : 'Access Warehouse'}
           </button>
         </form>
-
-        {showLimitPopup && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(4px)'
-          }}>
-            <div style={{
-              background: 'white',
-              padding: '2rem',
-              borderRadius: 'var(--radius-lg)',
-              maxWidth: '350px',
-              textAlign: 'center',
-              boxShadow: 'var(--shadow-lg)'
-            }}>
-              <div style={{ width: '50px', height: '50px', background: '#fee2e2', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1rem' }}>
-                <Lock size={24} style={{ color: '#ef4444' }} />
-              </div>
-              <h3 style={{ marginBottom: '0.5rem' }}>Warehouse Session Limit</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                This warehouse account is active on 3 other devices. Please close an active session to log in.
-              </p>
-              <button 
-                onClick={() => setShowLimitPopup(false)}
-                className="btn btn-primary"
-                style={{ width: '100%' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
 
         <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
           <MapPin size={14} /> Only for registered warehouse holders

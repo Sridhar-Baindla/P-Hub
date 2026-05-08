@@ -49,37 +49,28 @@ export const AppProvider = ({ children }) => {
   };
 
   const checkDeviceLimit = async (userId) => {
-    try {
-      const response = await fetch(`${API_URL}/sessions?userId=${userId}`);
-      if (!response.ok) throw new Error('Failed to check sessions');
-      const sessions = await response.json();
-      
-      const deviceId = getDeviceId();
-      const existingSession = sessions.find(s => s.deviceId === deviceId);
-      
-      if (existingSession) return true; 
-      if (sessions.length >= 3) return false; 
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking device limit:', error);
-      return true; 
-    }
+    // Device limit has been removed to allow multi-device login.
+    return true;
   };
 
   const login = async (userData, userToken) => {
     const deviceId = getDeviceId();
     
-    // Check if session already exists for this device
-    const res = await fetch(`${API_URL}/sessions?userId=${userData.id}&deviceId=${deviceId}`);
-    const sessions = await res.json();
-    
-    if (sessions.length === 0) {
-      await fetch(`${API_URL}/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userData.id, deviceId, lastActive: new Date().toISOString() })
-      });
+    // Background session tracking - should not block login
+    try {
+      const res = await fetch(`${API_URL}/sessions?userId=${userData.id}&deviceId=${deviceId}`);
+      if (res.ok) {
+        const sessions = await res.json();
+        if (sessions.length === 0) {
+          await fetch(`${API_URL}/sessions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userData.id, deviceId, lastActive: new Date().toISOString() })
+          });
+        }
+      }
+    } catch (sessionError) {
+      console.warn("Session tracking failed, continuing login:", sessionError);
     }
 
     setToken(userToken);

@@ -61,13 +61,6 @@ const Login = () => {
       if (isLoginView) {
         const { user: userData, token: userToken } = data;
         
-        const canLogin = await checkDeviceLimit(userData.id);
-        if (!canLogin) {
-          setShowLimitPopup(true);
-          setLoading(false);
-          return;
-        }
-
         // MUST await login to ensure localStorage is set before navigation
         await login(userData, userToken);
         
@@ -176,33 +169,6 @@ const Login = () => {
             {isLoginView ? 'Sign Up' : 'Log In'}
           </button>
         </div>
-
-        {showLimitPopup && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center',
-            alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)'
-          }}>
-            <div style={{
-              background: 'white', padding: '2.5rem', borderRadius: 'var(--radius-lg)',
-              maxWidth: '400px', textAlign: 'center', boxShadow: 'var(--shadow-lg)'
-            }}>
-              <div style={{
-                width: '60px', height: '60px', background: '#fee2e2', borderRadius: '50%',
-                display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.5rem'
-              }}>
-                <Lock size={30} style={{ color: '#ef4444' }} />
-              </div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--navy)' }}>Device Limit Reached</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.5 }}>
-                You are currently logged in on 3 other devices. Please log out from one of those devices to log in here.
-              </p>
-              <button onClick={() => setShowLimitPopup(false)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.875rem' }}>
-                Understood
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

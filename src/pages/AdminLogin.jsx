@@ -34,13 +34,6 @@ const AdminLogin = () => {
           id: 'admin-001'
         };
 
-        const canLogin = await checkDeviceLimit(adminUser.id);
-        if (!canLogin) {
-          setShowLimitPopup(true);
-          setLoading(false);
-          return;
-        }
-
         login(adminUser);
         navigate('/admin');
       } else {
@@ -116,56 +109,6 @@ const AdminLogin = () => {
             {loading ? 'Verifying...' : 'Authenticate'}
           </button>
         </form>
-
-        {showLimitPopup && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{
-              background: '#1e293b',
-              padding: '2.5rem',
-              borderRadius: 'var(--radius-lg)',
-              maxWidth: '400px',
-              textAlign: 'center',
-              border: '1px solid #334155',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }}>
-              <div style={{
-                width: '60px',
-                height: '60px',
-                background: 'rgba(239, 68, 68, 0.2)',
-                borderRadius: '50%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                margin: '0 auto 1.5rem'
-              }}>
-                <Lock size={30} style={{ color: '#ef4444' }} />
-              </div>
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'white' }}>Session Limit Reached</h3>
-              <p style={{ color: '#94a3b8', marginBottom: '2rem', lineHeight: 1.5 }}>
-                Admin security protocol: This account is active on 3 other devices. Please terminate an existing session to gain access.
-              </p>
-              <button 
-                onClick={() => setShowLimitPopup(false)}
-                className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '0.875rem', background: '#fbbf24', color: '#000', fontWeight: 700, border: 'none' }}
-              >
-                Understood
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

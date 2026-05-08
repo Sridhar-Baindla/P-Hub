@@ -4,17 +4,18 @@ const getApiUrl = () => {
 
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
-  const hostname = window.location.hostname;
+  // Use current hostname and protocol
+  const hostname = window.location.hostname || 'localhost';
+  const protocol = window.location.protocol;
   
-  // If we are on Netlify, we can't use the netlify hostname for the backend port 5000.
-  // Default to localhost or provide a way for the user to see what's happening.
-  if (hostname.includes('netlify.app')) {
-    console.warn('Running on Netlify. If your backend is local, access the site via your local IP instead.');
-    // You can set localStorage.setItem("VITE_API_URL_OVERRIDE", "http://YOUR_IP:5000") in the console
-    return 'http://localhost:5000'; 
+  // Default development behavior
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000';
   }
 
-  return `http://${hostname}:5000`;
+  // For small screens / mobile devices accessing via local IP
+  return `${protocol}//${hostname}:5000`;
 };
 
 export const API_URL = getApiUrl();
+console.log('PHUB API Connection:', API_URL);

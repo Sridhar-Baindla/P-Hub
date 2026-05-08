@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, Bell, X, LogOut, Check, Menu } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
@@ -16,6 +16,11 @@ const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Refs for click-outside detection
+  const searchRef = useRef(null);
+  const notificationRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
   // Fetch data
   useEffect(() => {
     // Fetch notifications
@@ -26,6 +31,29 @@ const Header = () => {
         .catch(err => console.error(err));
     }
   }, [user]);
+
+  // Handle click outside to close popups
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close Search if clicked outside
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearch(false);
+      }
+      // Close Notifications if clicked outside
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      // Close Mobile Menu if clicked outside
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e) => {
     const query = e.target.value;
@@ -82,7 +110,7 @@ const Header = () => {
           P-Hub
         </Link>
 
-        <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        <nav ref={mobileMenuRef} className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           {!location.pathname.startsWith('/warehouse') && (
             <>
               <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
@@ -100,7 +128,7 @@ const Header = () => {
           {!location.pathname.startsWith('/warehouse') && (
             <>
               {/* Search */}
-              <div className="icon-wrapper">
+              <div className="icon-wrapper" ref={searchRef}>
                 <button className="icon-btn" aria-label="Search" onClick={() => setShowSearch(!showSearch)}>
                   {showSearch ? <X size={20} /> : <Search size={20} />}
                 </button>
@@ -139,7 +167,7 @@ const Header = () => {
               </div>
 
               {/* Notifications */}
-              <div className="icon-wrapper">
+              <div className="icon-wrapper" ref={notificationRef}>
                 <button className="icon-btn" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}>
                   <Bell size={20} />
                   {unreadCount > 0 && (
