@@ -58,19 +58,27 @@ export const AppProvider = ({ children }) => {
     
     // Background session tracking - should not block login
     try {
-      const res = await fetch(`${API_URL}/sessions?userId=${userData.id}&deviceId=${deviceId}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout for background tasks
+
+      const res = await fetch(`${API_URL}/sessions?userId=${userData.id}&deviceId=${deviceId}`, {
+        signal: controller.signal
+      });
+      
       if (res.ok) {
         const sessions = await res.json();
         if (sessions.length === 0) {
           await fetch(`${API_URL}/sessions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: userData.id, deviceId, lastActive: new Date().toISOString() })
+            body: JSON.stringify({ userId: userData.id, deviceId, lastActive: new Date().toISOString() }),
+            signal: controller.signal
           });
         }
       }
+      clearTimeout(timeoutId);
     } catch (sessionError) {
-      console.warn("Session tracking failed, continuing login:", sessionError);
+      console.warn("Session tracking failed or timed out, continuing login:", sessionError);
     }
 
     setToken(userToken);

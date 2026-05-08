@@ -30,8 +30,13 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // Prevent double submission
+    
     setErrorMsg('');
     setLoading(true);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     try {
       const endpoint = isLoginView ? '/auth/login' : '/auth/register';
@@ -48,9 +53,11 @@ const Login = () => {
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await res.json();
 
       if (!res.ok) {
@@ -61,20 +68,24 @@ const Login = () => {
       if (isLoginView) {
         const { user: userData, token: userToken } = data;
         
-        // MUST await login to ensure localStorage is set before navigation
+        // Ensure state updates and navigation happen reliably
         await login(userData, userToken);
         
         if (userData.role === 'admin') navigate('/admin');
         else if (userData.role === 'warehouse_manager') navigate('/warehouse');
         else navigate('/');
       } else {
-        // After registration, switch to login view or auto-login
         setIsLoginView(true);
         setErrorMsg('Registration successful! Please log in.');
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Auth error:', error);
-      setErrorMsg(error.message);
+      if (error.name === 'AbortError') {
+        setErrorMsg('Connection timed out. Please check your internet/server.');
+      } else {
+        setErrorMsg(error.message || 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
