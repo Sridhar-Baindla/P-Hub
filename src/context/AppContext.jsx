@@ -54,6 +54,11 @@ export const AppProvider = ({ children }) => {
   };
 
   const login = async (userData, userToken) => {
+    if (!userData || !userToken) {
+        console.error("Invalid login data received");
+        throw new Error("Invalid login response from server");
+    }
+
     const deviceId = getDeviceId();
     
     // Background session tracking - should not block login
@@ -67,7 +72,7 @@ export const AppProvider = ({ children }) => {
       
       if (res.ok) {
         const sessions = await res.json();
-        if (sessions.length === 0) {
+        if (Array.isArray(sessions) && sessions.length === 0) {
           await fetch(`${API_URL}/sessions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -81,10 +86,15 @@ export const AppProvider = ({ children }) => {
       console.warn("Session tracking failed or timed out, continuing login:", sessionError);
     }
 
-    setToken(userToken);
-    setUser(userData);
-    localStorage.setItem('token', userToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    try {
+        setToken(userToken);
+        setUser(userData);
+        localStorage.setItem('token', userToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+    } catch (storageError) {
+        console.error("Failed to save login state:", storageError);
+        throw new Error("Could not save login information. Please check your browser settings.");
+    }
   };
 
   const logout = async () => {

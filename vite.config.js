@@ -5,18 +5,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true, // Listen on all addresses, including LAN and public addresses
     proxy: {
-      '/auth': 'http://localhost:5000',
-      '/medicines': 'http://localhost:5000',
-      '/cart': 'http://localhost:5000',
-      '/orders': 'http://localhost:5000',
-      '/notifications': 'http://localhost:5000',
-      '/prescriptions': 'http://localhost:5000',
-      '/stock': 'http://localhost:5000',
-      '/payments': 'http://localhost:5000',
-      '/admin': 'http://localhost:5000',
-      '/warehouseAdmins': 'http://localhost:5000',
-      '/sessions': 'http://localhost:5000'
+      '/auth': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/medicines': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/cart': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/orders': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/notifications': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/prescriptions': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/stock': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/payments': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/admin': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/warehouseAdmins': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      '/sessions': { target: 'http://localhost:5000', changeOrigin: true, secure: false }
     }
   }
 })
