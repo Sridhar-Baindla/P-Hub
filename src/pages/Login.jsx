@@ -92,8 +92,8 @@ const Login = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '4rem 0', display: 'flex', justifyContent: 'center' }}>
-      <div className="auth-card" style={{ maxWidth: '450px', width: '100%', background: 'var(--surface)', padding: '3rem', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}>
+    <div className="container" style={{ padding: '2rem 1rem', display: 'flex', justifyContent: 'center', minHeight: 'calc(100vh - 80px)', alignItems: 'center' }}>
+      <div className="auth-card" style={{ maxWidth: '450px', width: '100%', background: 'var(--surface)', padding: 'max(1.5rem, 3vw)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}>
         <h1 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{isLoginView ? 'Welcome Back' : 'Join P-Hub'}</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem' }}>
           {isLoginView ? 'Sign in to access your prescriptions and orders' : 'Create an account to start ordering medicines'}

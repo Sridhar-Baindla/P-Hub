@@ -47,8 +47,8 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '6rem 0', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ maxWidth: '400px', width: '100%', background: '#0f172a', color: 'white', padding: '3rem', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }}>
+    <div className="container" style={{ padding: '2rem 1rem', display: 'flex', justifyContent: 'center', minHeight: 'calc(100vh - 80px)', alignItems: 'center' }}>
+      <div style={{ maxWidth: '400px', width: '100%', background: '#0f172a', color: 'white', padding: 'max(1.5rem, 3vw)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }}>
         <div style={{ width: '60px', height: '60px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
           <ShieldCheck size={32} color="#fbbf24" />
         </div>

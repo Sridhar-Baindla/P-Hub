@@ -245,3 +245,51 @@
     gap: 1rem !important;
   }
 }
+
+/* Dashboard Layout Grid Fixes */
+.activity-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.billing-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  height: calc(100vh - 100px);
+}
+
+@media (max-width: 1024px) {
+  .billing-container {
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 850px) {
+  .activity-quick-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .billing-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .billing-summary {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 600px) {
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}

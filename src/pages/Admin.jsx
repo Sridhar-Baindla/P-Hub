@@ -368,7 +368,7 @@ const Admin = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="activity-quick-actions">
                <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
                   <h3 style={{ marginBottom: '1rem' }}>Recent Activity</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -387,7 +387,7 @@ const Admin = () => {
                </div>
                <div style={{ background: 'var(--surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
                   <h3 style={{ marginBottom: '1rem' }}>Quick Actions</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="quick-actions-grid">
                     <button onClick={() => setActiveTab('billing')} style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                       <ShoppingCart size={24} style={{ color: 'var(--primary)', marginBottom: '0.5rem' }} />
                       <div style={{ fontWeight: 600 }}>Fast Billing</div>
@@ -415,7 +415,7 @@ const Admin = () => {
         )}
 
         {activeTab === 'billing' && (
-          <div className="billing-container" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem', height: 'calc(100vh - 100px)' }}>
+          <div className="billing-container">
             <div className="billing-inventory">
               <div className="admin-header" style={{ marginBottom: '1.5rem' }}>
                 <div>

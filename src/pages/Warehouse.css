@@ -1,16 +1,16 @@
 .warehouse-login-container {
-  min-height: 80vh;
+  min-height: calc(100vh - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
   background: radial-gradient(circle at top right, rgba(249, 115, 22, 0.05), transparent),
               radial-gradient(circle at bottom left, rgba(30, 58, 138, 0.05), transparent);
 }
 
 .warehouse-login-card {
   background: var(--surface);
-  padding: 3rem;
+  padding: max(1.5rem, 3vw);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   max-width: 450px;
