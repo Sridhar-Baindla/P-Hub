@@ -23,6 +23,7 @@ const Checkout = () => {
   const [previousAddresses, setPreviousAddresses] = useState([]);
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [txnId, setTxnId] = useState('');
   
   const [formData, setFormData] = useState({
     address: '', city: '', pincode: '', phone: ''
@@ -64,7 +65,7 @@ const Checkout = () => {
     };
 
     loadData();
-  }, [user, token, navigate]);
+  }, [user, token, navigate, authenticatedFetch]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.medicine.price * item.quantity), 0);
   const deliveryFee = 0.00;
@@ -110,7 +111,8 @@ const Checkout = () => {
       return;
     }
 
-    if (paymentMethod === 'PhonePe') {
+    if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
+      setTxnId(Math.random().toString(36).substring(7).toUpperCase());
       simulatePhonePePayment();
     } else {
       processOrder();
@@ -199,7 +201,7 @@ const Checkout = () => {
             <CheckCircle size={80} style={{ margin: '0 auto' }} />
           </div>
           <h2 style={{ color: '#22c55e' }}>Payment Successful!</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Transaction ID: TXN{Math.random().toString(36).substring(7).toUpperCase()}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Transaction ID: TXN{txnId}</p>
         </div>
       )}
 
@@ -227,7 +229,7 @@ const Checkout = () => {
 
   return (
     <div className="container checkout-container">
-      {showPhonePeOverlay && <PhonePeOverlay />}
+      {showPhonePeOverlay && PhonePeOverlay()}
       <button onClick={() => navigate('/cart')} className="back-btn">
         <ArrowLeft size={20} /> Back to Cart
       </button>

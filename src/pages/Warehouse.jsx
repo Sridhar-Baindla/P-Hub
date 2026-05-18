@@ -9,7 +9,7 @@ const Warehouse = () => {
   const { user: warehouseAdmin, logout: handleLogout, showProfile, setShowProfile, token } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('inventory'); // inventory, orders
   const [orders, setOrders] = useState([]);
-  const [otpInputs, setOtpInputs] = useState({});
+  const [otpInputs] = useState({});
   const [stock, setStock] = useState([]);
   const [medicines, setMedicines] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +57,7 @@ const Warehouse = () => {
 
   useEffect(() => {
     if (warehouseAdmin && warehouseAdmin.role === 'warehouse_manager') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMedicines();
       fetchStock(warehouseAdmin.location);
       fetchOrders();
@@ -328,7 +329,7 @@ const Warehouse = () => {
                 <h1>Inventory Management</h1>
                 <p>Update real-time stock levels for {warehouseAdmin.location} location.</p>
               </div>
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                 <div className="warehouse-search-bar" style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -337,7 +338,7 @@ const Warehouse = () => {
                   borderRadius: 'var(--radius-lg)', 
                   padding: '0.6rem 1.25rem', 
                   gap: '0.75rem', 
-                  minWidth: '350px',
+                  width: '100%',
                   boxShadow: 'var(--shadow-sm)'
                 }}>
                   <Search size={18} color="var(--text-secondary)" />

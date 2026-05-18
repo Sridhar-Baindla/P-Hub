@@ -30,6 +30,7 @@ const Prescription = () => {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!name && user.name) setName(user.name);
       fetchPastPrescriptions();
     }

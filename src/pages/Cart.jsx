@@ -78,12 +78,12 @@ const Cart = () => {
     <div className="container" style={{ padding: '3rem 0' }}>
       <h1>Shopping Cart</h1>
       
-      <div className="cart-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', marginTop: '2rem' }}>
+      <div className="cart-layout" style={{ marginTop: '2rem' }}>
         <div className="cart-items" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cartItems.map(item => (
-            <div key={item.id} className="cart-item" style={{ display: 'flex', gap: '1.5rem', padding: '1.5rem', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-              <img src={item.medicine.image} alt={item.medicine.name} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
-              <div style={{ flex: 1 }}>
+            <div key={item.id} className="cart-item" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '1.5rem' }}>
+              <img src={item.medicine.image} alt={item.medicine.name} className="cart-item-image" />
+              <div className="cart-item-info">
                 <h3 style={{ marginBottom: '0.25rem' }}>{item.medicine.name}</h3>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>By PharmaLife</p>
@@ -91,7 +91,7 @@ const Cart = () => {
                     Exp: {item.medicine.expiryDate || 'N/A'}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="cart-item-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
                       <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ padding: '0.25rem 0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}><Minus size={16} /></button>

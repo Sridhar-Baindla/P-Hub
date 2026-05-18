@@ -1,5 +1,5 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { User, MapPin, Package, Heart, LogOut, Download, CheckCircle, Clock } from 'lucide-react';
+import { useState, useContext, useEffect } from 'react';
+import { User, MapPin, Package, LogOut, Download, CheckCircle, Clock } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
@@ -14,6 +14,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (activeTab === 'orders' && user && token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       authenticatedFetch(`${API_URL}/orders`)
         .then(res => res.json())
@@ -26,7 +27,7 @@ const Profile = () => {
           setLoading(false);
         });
     }
-  }, [activeTab, user, token]);
+  }, [activeTab, user, token, authenticatedFetch]);
 
   const handleLogout = () => {
     logout();
@@ -74,7 +75,7 @@ const Profile = () => {
         {activeTab === 'profile' && (
           <div>
             <h2 style={{ marginBottom: '2rem' }}>Personal Information</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
               <div className="form-group">
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Full Name</label>
                 <input type="text" className="input-field" defaultValue={user.name} style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }} />

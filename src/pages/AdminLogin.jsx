@@ -4,11 +4,10 @@ import { AppContext } from '../context/AppContext';
 import { Lock, ShieldCheck, Mail, Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
-  const { login, checkDeviceLimit } = useContext(AppContext);
+  const { login } = useContext(AppContext);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showLimitPopup, setShowLimitPopup] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -39,7 +38,7 @@ const AdminLogin = () => {
       } else {
         setErrorMsg('Invalid admin credentials.');
       }
-    } catch (error) {
+    } catch {
       setErrorMsg('An error occurred during authentication. Please try again.');
     } finally {
       setLoading(false);

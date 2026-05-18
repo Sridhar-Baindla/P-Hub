@@ -54,12 +54,17 @@ const AuthModal = ({ isOpen, onClose }) => {
           })
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Invalid email or password.');
+        const text = await response.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (err) {
+          throw new Error('Server returned an invalid response.');
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Invalid email or password.');
+        }
         const canLogin = await checkDeviceLimit(data.user.id);
 
         if (!canLogin) {
@@ -96,12 +101,18 @@ const AuthModal = ({ isOpen, onClose }) => {
           })
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create account');
+        const text = await response.text();
+        let data = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (err) {
+          throw new Error('Server returned an invalid response.');
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create account');
+        }
+
         await login(data.user, data.token);
         onClose();
       }

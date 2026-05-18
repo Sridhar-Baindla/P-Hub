@@ -15,10 +15,11 @@ const Medicines = () => {
   const [addedItems, setAddedItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [stockLevels, setStockLevels] = useState([]);
+
 
   useEffect(() => {
     const q = searchParams.get('search');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (q) setSearchQuery(q);
   }, [searchParams]);
 

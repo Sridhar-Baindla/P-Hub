@@ -39,6 +39,12 @@ const Admin = () => {
   const [billingCart, setBillingCart] = useState([]);
   const [billingSearchQuery, setBillingSearchQuery] = useState('');
   const [billCustomer, setBillCustomer] = useState({ name: '', phone: '' });
+  const [dashboardStats, setDashboardStats] = useState({
+    totalSales: 125400,
+    activeOrders: 42,
+    totalPatients: 1205,
+    pendingRx: 8
+  });
 
   const generatePDF = () => {
     try {
@@ -136,16 +142,16 @@ const Admin = () => {
   
   const [orders, setOrders] = useState([]);
   
-  useEffect(() => {
-    fetchInventory();
-  }, []);
-
   const fetchInventory = () => {
     fetch(`${API_URL}/medicines`)
       .then(res => res.json())
       .then(data => setInventory(data))
       .catch(err => console.error(err));
   };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'prescriptions') {
@@ -267,13 +273,6 @@ const Admin = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  const [dashboardStats, setDashboardStats] = useState({
-    totalSales: 125400,
-    activeOrders: 42,
-    totalPatients: 1205,
-    pendingRx: 8
-  });
-
   const { subtotal, tax, total } = calculateTotal();
 
   const filteredInventory = inventory.filter(med => 
@@ -379,7 +378,7 @@ const Admin = () => {
                         </div>
                         <div>
                           <p style={{ fontWeight: 500, fontSize: '0.9rem' }}>New order #OR-554{i} placed</p>
-                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{i*5} mins ago • ₹{(Math.random()*1000).toFixed(2)}</p>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{i*5} mins ago • ₹{(i * 123.45).toFixed(2)}</p>
                         </div>
                       </div>
                     ))}

@@ -5,12 +5,11 @@ import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Login = () => {
-  const { login, checkDeviceLimit } = useContext(AppContext);
+  const { login } = useContext(AppContext);
   const navigate = useNavigate();
   const [isLoginView, setIsLoginView] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showLimitPopup, setShowLimitPopup] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -58,7 +57,15 @@ const Login = () => {
       });
 
       clearTimeout(timeoutId);
-      const data = await res.json();
+      
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        console.error("Non-JSON response received:", text);
+        throw new Error("Server returned an invalid response. Please try again.");
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Authentication failed');

@@ -29,7 +29,7 @@ export const generateInvoice = (order) => {
         doc.addImage(logo, 'PNG', (pageWidth - watermarkWidth) / 2, (pageHeight - watermarkHeight) / 2, watermarkWidth, watermarkHeight);
         // @ts-ignore
         doc.restoreGraphicsState();
-    } catch (e) {
+    } catch {
         console.warn("Watermark opacity failed, skipping watermark");
     }
 

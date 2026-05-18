@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Briefcase, Heart, Zap, Coffee, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

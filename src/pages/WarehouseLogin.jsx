@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
@@ -7,17 +7,17 @@ import './Warehouse.css';
 import { API_URL } from '../config';
 
 const WarehouseLogin = () => {
-  const { user, login, checkDeviceLimit } = useContext(AppContext);
+  const { user, login } = useContext(AppContext);
   const navigate = useNavigate();
 
-  if (user && user.role === 'warehouse_manager') {
-    return <Navigate to="/warehouse" replace />;
-  }
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showLimitPopup, setShowLimitPopup] = useState(false);
+
+  if (user && user.role === 'warehouse_manager') {
+    return <Navigate to="/warehouse" replace />;
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,7 +30,15 @@ const WarehouseLogin = () => {
         body: JSON.stringify(loginData)
       });
       
-      const data = await res.json();
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        console.error("Non-JSON response received:", text);
+        throw new Error("Server returned an invalid response. Please try again.");
+      }
+
       if (!res.ok) throw new Error(data.error || 'Login failed');
 
       const { token, admin } = data;
