@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Login = () => {
   const { login } = useContext(AppContext);
@@ -48,8 +49,8 @@ const Login = () => {
         return;
       }
 
-      // Hardcode relative path to guarantee Vite proxy matches it on all devices
-      const res = await fetch(endpoint, {
+      // Use API_URL to support both local proxying (relative path) and production (absolute path)
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

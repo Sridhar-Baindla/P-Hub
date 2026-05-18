@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Warehouse.css';
+import { API_URL } from '../config';
 
 const WarehouseLogin = () => {
   const { user, login } = useContext(AppContext);
@@ -22,8 +23,8 @@ const WarehouseLogin = () => {
     setError('');
     setLoading(true);
     try {
-      // Hardcode relative path to guarantee Vite proxy matches it on all devices
-      const res = await fetch('/auth/warehouse/login', {
+      // Use API_URL to support both local proxying and production
+      const res = await fetch(`${API_URL}/auth/warehouse/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)

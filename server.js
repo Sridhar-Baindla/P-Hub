@@ -20,6 +20,15 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
+// Debug Logging Middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.method === 'POST') {
+    console.log('Body:', req.body);
+  }
+  next();
+});
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) console.error('Database connection error:', err.message);
   else console.log('Connected to SQLite database.');
