@@ -24,7 +24,8 @@ const WarehouseLogin = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/warehouse/login`, {
+      // Hardcode relative path to guarantee Vite proxy matches it on all devices
+      const res = await fetch('/auth/warehouse/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
