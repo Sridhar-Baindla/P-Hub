@@ -64,11 +64,11 @@ const Login = () => {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
         console.error("Non-JSON response received:", text);
-        throw new Error("Server returned an invalid response. Please try again.");
+        throw new Error(`Server error (${res.status}): Invalid response format.`);
       }
 
       if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.error || `Authentication failed (Status: ${res.status}, Body: ${text || 'empty'})`);
       }
 
       // Handle successful login

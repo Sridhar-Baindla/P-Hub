@@ -59,11 +59,11 @@ const AuthModal = ({ isOpen, onClose }) => {
         try {
           data = text ? JSON.parse(text) : {};
         } catch (err) {
-          throw new Error('Server returned an invalid response.');
+          throw new Error(`Server error (${response.status}): Invalid response format.`);
         }
 
         if (!response.ok) {
-          throw new Error(data.error || 'Invalid email or password.');
+          throw new Error(data.error || `Authentication failed (Status: ${response.status}, Body: ${text || 'empty'})`);
         }
         const canLogin = await checkDeviceLimit(data.user.id);
 
@@ -106,11 +106,11 @@ const AuthModal = ({ isOpen, onClose }) => {
         try {
           data = text ? JSON.parse(text) : {};
         } catch (err) {
-          throw new Error('Server returned an invalid response.');
+          throw new Error(`Server error (${response.status}): Invalid response format.`);
         }
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to create account');
+          throw new Error(data.error || `Failed to create account (Status: ${response.status}, Body: ${text || 'empty'})`);
         }
 
         await login(data.user, data.token);

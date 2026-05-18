@@ -36,10 +36,10 @@ const WarehouseLogin = () => {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
         console.error("Non-JSON response received:", text);
-        throw new Error("Server returned an invalid response. Please try again.");
+        throw new Error(`Server error (${res.status}): Invalid response format.`);
       }
 
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!res.ok) throw new Error(data.error || `Login failed (Status: ${res.status}, Body: ${text || 'empty'})`);
 
       const { token, admin } = data;
 
