@@ -2,7 +2,6 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { API_URL } from '../config';
 
 const Login = () => {
   const { login } = useContext(AppContext);
@@ -65,7 +64,7 @@ const Login = () => {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
         console.error("Non-JSON response received:", text);
-        throw new Error(`Server error (${res.status}): Invalid response format.`);
+        throw new Error(`Server error (${res.status}): Invalid response format.`, { cause: err });
       }
 
       if (!res.ok) {

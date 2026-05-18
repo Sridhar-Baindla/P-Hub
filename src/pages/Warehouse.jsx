@@ -435,8 +435,8 @@ const Warehouse = () => {
               {updateMsg && <div className="success-badge"><Check size={16} /> {updateMsg}</div>}
             </div>
 
-            <div className="data-table-container" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="data-table-container" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+              <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead style={{ background: 'var(--background)' }}>
                   <tr>
                     <th style={{ padding: '1rem', textAlign: 'left' }}>Order ID</th>

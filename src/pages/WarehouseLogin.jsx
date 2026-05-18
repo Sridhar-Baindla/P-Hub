@@ -4,8 +4,6 @@ import { Package, Mail, Lock, MapPin, Eye, EyeOff } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import './Warehouse.css';
 
-import { API_URL } from '../config';
-
 const WarehouseLogin = () => {
   const { user, login } = useContext(AppContext);
   const navigate = useNavigate();
@@ -37,7 +35,7 @@ const WarehouseLogin = () => {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
         console.error("Non-JSON response received:", text);
-        throw new Error(`Server error (${res.status}): Invalid response format.`);
+        throw new Error(`Server error (${res.status}): Invalid response format.`, { cause: err });
       }
 
       if (!res.ok) throw new Error(data.error || `Login failed (Status: ${res.status}, Body: ${text || 'empty'})`);
