@@ -32,7 +32,8 @@ export default defineConfig({
       '/payments': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
       '/admin': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
       '/warehouseAdmins': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
-      '/sessions': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false }
+      '/sessions': { target: 'http://127.0.0.1:5000', changeOrigin: true, secure: false },
+      '/socket.io': { target: 'http://127.0.0.1:5000', ws: true, changeOrigin: true }
     }
   },
   preview: {
