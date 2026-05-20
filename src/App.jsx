@@ -28,10 +28,7 @@ function App() {
   const { user } = useContext(AppContext);
   const location = useLocation();
 
-  // Redirect warehouse manager to warehouse page if they try to access other routes
-  if (user && user.role === 'warehouse_manager' && !location.pathname.startsWith('/warehouse')) {
-    return <Navigate to="/warehouse" replace />;
-  }
+
 
   const isWarehousePage = location.pathname.startsWith('/warehouse');
 
@@ -50,7 +47,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/warehouse" element={<Warehouse />} />
+          <Route
+            path="/warehouse"
+            element={
+              user && user.role === 'warehouse_manager'
+                ? <Warehouse />
+                : <Navigate to="/warehouse/login" replace />
+            }
+          />
           <Route path="/warehouse/login" element={<WarehouseLogin />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
@@ -59,6 +63,8 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/returns" element={<Returns />} />
           <Route path="/checkout" element={<Checkout />} />
+          {/* Catch-all: any unknown URL → Home instead of blank page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
 
         </Routes>
       </main>
