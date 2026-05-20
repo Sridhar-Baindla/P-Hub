@@ -489,14 +489,31 @@ app.post('/orders', authenticateToken, (req, res) => {
   // Confirmed if Paid OR COD
   const status = (paymentStatus === 'Paid' || paymentMethod === 'COD') ? 'Confirmed' : 'Pending';
 
-  db.run(`INSERT INTO orders (userId, items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, status, orderDate, transactionId) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, JSON.stringify(items), totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, status, orderDate, transactionId],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, transactionId, status });
+  db.serialize(() => {
+    // 1. Decrement stock for each item
+    if (items && Array.isArray(items)) {
+      items.forEach(item => {
+        if (item.medicineId && item.quantity) {
+          // Find the stock location with the most quantity and decrement it
+          db.run(`
+            UPDATE stock 
+            SET quantity = CASE WHEN quantity - ? < 0 THEN 0 ELSE quantity - ? END 
+            WHERE id = (SELECT id FROM stock WHERE medicineId = ? ORDER BY quantity DESC LIMIT 1)
+          `, [item.quantity, item.quantity, item.medicineId]);
+        }
+      });
     }
-  );
+
+    // 2. Insert the order
+    db.run(`INSERT INTO orders (userId, items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, status, orderDate, transactionId) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, JSON.stringify(items), totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, status, orderDate, transactionId],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: this.lastID, transactionId, status });
+      }
+    );
+  });
 });
 
 app.put('/orders/:id/status', authenticateToken, (req, res) => {
