@@ -192,13 +192,7 @@ const Checkout = () => {
       <h3 style={{ marginTop: '1rem', color: '#1f2937' }}>Amount: ₹{total.toFixed(2)}</h3>
 
       <div style={{ marginTop: '2rem', width: '100%', maxWidth: '300px', textAlign: 'left' }}>
-        <button 
-          onClick={handleVerifyUtr}
-          className="btn btn-primary"
-          style={{ width: '100%', padding: '0.75rem', background: '#22c55e' }}
-        >
-          Verify & Place Order
-        </button>
+
         <button 
           onClick={() => setShowPhonePeOverlay(false)}
           className="btn"
