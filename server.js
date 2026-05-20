@@ -683,7 +683,7 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   
   // Catch-all route for React Router (must be last before listen)
-  app.get('*', (req, res) => {
+  app.use((req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
