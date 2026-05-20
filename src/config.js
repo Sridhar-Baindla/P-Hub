@@ -5,7 +5,8 @@ const getApiUrl = () => {
     // Dynamically detect local network IP (e.g. 192.168.X.X) and point directly to backend port 5000
     // This bypasses any Vite proxy issues and allows all local devices to connect reliably.
     const hostname = window.location.hostname;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.');
+    const isIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
+    const isLocal = hostname === 'localhost' || hostname.endsWith('.local') || isIp;
     
     if (isLocal) {
       return `${window.location.protocol}//${hostname}:5000`;
