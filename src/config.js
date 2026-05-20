@@ -2,14 +2,16 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('VITE_API_URL_OVERRIDE');
     
-    // Dynamically detect local network IP (e.g. 192.168.X.X) and point directly to backend port 5000
-    // This bypasses any Vite proxy issues and allows all local devices to connect reliably.
+    // In local development (localhost, .local, or a local IP), we must use relative paths ('')
+    // to route all API calls through the Vite dev server proxy (port 5173).
+    // This is highly secure and robust: it bypasses host firewall restrictions on port 5000,
+    // avoids port conflicts with other Windows services, and enables seamless multi-device login.
     const hostname = window.location.hostname;
     const isIp = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
     const isLocal = hostname === 'localhost' || hostname.endsWith('.local') || isIp;
     
     if (isLocal) {
-      return `${window.location.protocol}//${hostname}:5000`;
+      return '';
     }
   }
 
