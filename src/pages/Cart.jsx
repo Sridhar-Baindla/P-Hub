@@ -57,7 +57,10 @@ const Cart = () => {
     }
   };
 
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.medicine.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((acc, item) => {
+    const priceToUse = item.medicine.discountedPrice || item.medicine.price;
+    return acc + (priceToUse * item.quantity);
+  }, 0);
   const deliveryFee = 0.00;
   const total = subtotal + deliveryFee;
 
@@ -102,7 +105,12 @@ const Cart = () => {
                       <Trash2 size={16} /> Remove
                     </button>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>₹{(item.medicine.price * item.quantity).toFixed(2)}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    {item.medicine.discountedPrice && item.medicine.discountedPrice < item.medicine.price && (
+                      <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>₹{(item.medicine.price * item.quantity).toFixed(2)}</span>
+                    )}
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--primary)' }}>₹{((item.medicine.discountedPrice || item.medicine.price) * item.quantity).toFixed(2)}</div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -372,7 +372,7 @@ app.get('/cart', authenticateToken, (req, res) => {
 
   let query = `SELECT * FROM cart WHERE userId = ?`;
   if (expand === 'medicine') {
-    query = `SELECT cart.*, medicines.name as med_name, medicines.price as med_price, medicines.image as med_image, medicines.expiryDate as med_expiry 
+    query = `SELECT cart.*, medicines.name as med_name, medicines.price as med_price, medicines.discountedPrice as med_discountedPrice, medicines.image as med_image, medicines.expiryDate as med_expiry 
              FROM cart JOIN medicines ON cart.medicineId = medicines.id 
              WHERE cart.userId = ?`;
   }
@@ -390,6 +390,7 @@ app.get('/cart', authenticateToken, (req, res) => {
           id: r.medicineId, 
           name: r.med_name, 
           price: r.med_price, 
+          discountedPrice: r.med_discountedPrice,
           image: r.med_image,
           expiryDate: r.med_expiry 
         }

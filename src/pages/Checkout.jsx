@@ -72,7 +72,10 @@ const Checkout = () => {
     loadData();
   }, [user, token, navigate, authenticatedFetch]);
 
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.medicine.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((acc, item) => {
+    const priceToUse = item.medicine.discountedPrice || item.medicine.price;
+    return acc + (priceToUse * item.quantity);
+  }, 0);
   const deliveryFee = 0.00;
   const total = subtotal + deliveryFee;
 
@@ -107,7 +110,6 @@ const Checkout = () => {
   };
 
   const [phonePeState, setPhonePeState] = useState('idle'); // idle, processing, success
-  const [showPhonePeOverlay, setShowPhonePeOverlay] = useState(false);
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
@@ -142,7 +144,7 @@ const Checkout = () => {
         items: cartItems.map(item => ({
           medicineId: item.medicineId,
           name: item.medicine.name,
-          price: item.medicine.price,
+          price: item.medicine.discountedPrice || item.medicine.price,
           quantity: item.quantity
         })),
         totalAmount: total,
@@ -334,7 +336,7 @@ const Checkout = () => {
               {cartItems.map(item => (
                 <div key={item.id} className="summary-item">
                   <span>{item.medicine.name} x {item.quantity}</span>
-                  <span>₹{(item.medicine.price * item.quantity).toFixed(2)}</span>
+                  <span>₹{((item.medicine.discountedPrice || item.medicine.price) * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
