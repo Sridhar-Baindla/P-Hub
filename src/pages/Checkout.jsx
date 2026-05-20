@@ -128,12 +128,8 @@ const Checkout = () => {
   };
 
   const handleVerifyUtr = () => {
-    if (!utr || utr.length < 12) {
-      alert("Please enter a valid 12-digit UTR/Reference Number.");
-      return;
-    }
     setShowPhonePeOverlay(false);
-    processOrder('Pending Verification', utr);
+    processOrder('Pending Verification', 'Self-Confirmed');
   };
 
   const processOrder = async (pStatus = 'Pending', providedUtr = '') => {
@@ -196,15 +192,6 @@ const Checkout = () => {
       <h3 style={{ marginTop: '1rem', color: '#1f2937' }}>Amount: ₹{total.toFixed(2)}</h3>
 
       <div style={{ marginTop: '2rem', width: '100%', maxWidth: '300px', textAlign: 'left' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#4b5563' }}>Enter 12-digit UTR / Reference No:</label>
-        <input 
-          type="text" 
-          value={utr} 
-          onChange={(e) => setUtr(e.target.value)} 
-          placeholder="e.g. 312345678901" 
-          style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }}
-          maxLength={12}
-        />
         <button 
           onClick={handleVerifyUtr}
           className="btn btn-primary"
