@@ -480,10 +480,10 @@ app.get('/admin/stats', authenticateToken, (req, res) => {
 });
 
 app.post('/orders', authenticateToken, (req, res) => {
-  const { items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus } = req.body;
+  const { items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, transactionId: providedTxnId } = req.body;
   const userId = req.user.id;
   const orderDate = new Date().toISOString();
-  const transactionId = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  const transactionId = providedTxnId || ('TXN' + Math.random().toString(36).substring(2, 10).toUpperCase());
 
   // Confirmed if Paid OR COD
   const status = (paymentStatus === 'Paid' || paymentMethod === 'COD') ? 'Confirmed' : 'Pending';
