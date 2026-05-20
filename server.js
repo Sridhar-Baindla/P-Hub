@@ -12,9 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const JWT_SECRET = 'phub_secure_secret_key_2026';
-const dbPath = path.resolve(__dirname, 'phub.db');
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, 'phub.db');
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
