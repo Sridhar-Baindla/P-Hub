@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
+import { Server } from 'socket.io';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -690,6 +692,32 @@ if (fs.existsSync(distPath)) {
   console.log("No dist folder found. Static files will not be served.");
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+// Endpoint for mobile phone to trigger payment success
+app.post('/payments/simulate-webhook', (req, res) => {
+  const { txnId, status } = req.body;
+  if (!txnId) return res.status(400).json({ error: "txnId required" });
+  
+  // Broadcast to the checkout page
+  io.to(`payment_${txnId}`).emit('payment_status', { txnId, status });
+  
+  res.json({ success: true });
+});
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+io.on('connection', (socket) => {
+  // When a checkout page wants to listen for payment updates
+  socket.on('join_payment_room', (txnId) => {
+    socket.join(`payment_${txnId}`);
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Professional Secure Server running at http://0.0.0.0:${PORT}`);
 });

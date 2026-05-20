@@ -4,6 +4,8 @@ import { MapPin, Phone, CreditCard, CheckCircle, ArrowLeft, QrCode, History, Sea
 import { AppContext } from '../context/AppContext';
 import { API_URL } from '../config';
 import './Checkout.css';
+import { io } from 'socket.io-client';
+import { QRCodeSVG } from 'qrcode.react';
 
 const cityPincodeMap = {
   'Hyderabad': '500001', 'Mumbai': '400001', 'Delhi': '110001',
@@ -24,6 +26,8 @@ const Checkout = () => {
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [txnId, setTxnId] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
+  const socketRef = useState(null);
   
   const [formData, setFormData] = useState({
     address: '', city: '', pincode: '', phone: ''
@@ -119,18 +123,39 @@ const Checkout = () => {
     }
   };
 
+  useEffect(() => {
+    if (['PhonePe', 'Google Pay', 'Paytm'].includes(paymentMethod)) {
+      const id = Math.random().toString(36).substring(7).toUpperCase();
+      setTxnId(id);
+      
+      const baseUrl = window.location.origin;
+      setQrUrl(`${baseUrl}/pay/${id}?amount=${total.toFixed(2)}&method=${paymentMethod}`);
+    } else {
+      setShowQR(false);
+      setQrUrl('');
+    }
+  }, [paymentMethod, total]);
+
   const simulatePhonePePayment = () => {
     setShowPhonePeOverlay(true);
     setPhonePeState('processing');
     
-    // Simulate PhonePe Gateway Handshake
-    setTimeout(() => {
-      setPhonePeState('success');
-      setTimeout(() => {
-        setShowPhonePeOverlay(false);
-        processOrder('Paid');
-      }, 2000);
-    }, 3000);
+    // Connect to WebSocket to wait for mobile confirmation
+    const socketUrl = API_URL || window.location.origin;
+    const socket = io(socketUrl);
+    
+    socket.emit('join_payment_room', txnId);
+    
+    socket.on('payment_status', (data) => {
+      if (data.txnId === txnId && data.status === 'success') {
+        setPhonePeState('success');
+        setTimeout(() => {
+          setShowPhonePeOverlay(false);
+          processOrder('Paid');
+        }, 2000);
+        socket.disconnect();
+      }
+    });
   };
 
   const processOrder = async (pStatus = 'Pending') => {
@@ -309,13 +334,13 @@ const Checkout = () => {
               ))}
             </div>
 
-            {showQR && (
+            {showQR && qrUrl && (
               <div className="qr-container">
                 <div className="qr-header"><QrCode size={20} /> <span>Scan Secure QR</span></div>
-                <div className="qr-image-wrapper">
-                  <img src="/qr-code.png" alt="Payment QR" className="qr-image" />
-                  <p className="qr-hint">Scan and pay ₹{total.toFixed(2)} via SSL Secured Gateway</p>
+                <div className="qr-image-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '10px', display: 'inline-block' }}>
+                  <QRCodeSVG value={qrUrl} size={150} level="H" />
                 </div>
+                <p className="qr-hint" style={{ marginTop: '10px' }}>Scan with mobile to pay ₹{total.toFixed(2)} via {paymentMethod}</p>
               </div>
             )}
           </section>
