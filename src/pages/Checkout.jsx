@@ -119,21 +119,37 @@ const Checkout = () => {
     }
 
     if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
-      const upiUrl = `upi://pay?pa=6079090876081013@ybl&pn=PHUB%20Pharmacy&am=${total.toFixed(2)}&cu=INR`;
-      setQrUrl(upiUrl);
-      setShowPhonePeOverlay(true);
+      const id = Math.random().toString(36).substring(7).toUpperCase();
+      setTxnId(id);
+      
+      const baseUrl = window.location.origin;
+      setQrUrl(`${baseUrl}/pay/${id}?amount=${total.toFixed(2)}&method=${paymentMethod}`);
+      
+      simulatePhonePePayment(id);
     } else {
-      processOrder();
+      processOrder(); // Cash on Delivery goes immediately here
     }
   };
 
-  const handleVerifyUtr = () => {
-    if (!utr || utr.length < 12) {
-      alert("Please enter a valid 12-digit UTR/Reference Number.");
-      return;
-    }
-    setShowPhonePeOverlay(false);
-    processOrder('Pending Verification', utr);
+  const simulatePhonePePayment = (id) => {
+    setShowPhonePeOverlay(true);
+    setPhonePeState('processing');
+    
+    const socketUrl = API_URL || window.location.origin;
+    const socket = io(socketUrl);
+    
+    socket.emit('join_payment_room', id);
+    
+    socket.on('payment_status', (data) => {
+      if (data.txnId === id && data.status === 'success') {
+        setPhonePeState('success');
+        setTimeout(() => {
+          setShowPhonePeOverlay(false);
+          processOrder('Paid');
+        }, 2000);
+        socket.disconnect();
+      }
+    });
   };
 
   const processOrder = async (pStatus = 'Pending', providedUtr = '') => {
@@ -190,36 +206,36 @@ const Checkout = () => {
         <p style={{ color: 'var(--text-secondary)' }}>Scan with any UPI App (GPay, PhonePe, Paytm)</p>
       </div>
 
-      <div className="qr-image-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '10px', display: 'inline-block', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-        <QRCodeSVG value={qrUrl} size={200} level="H" />
-      </div>
-      <h3 style={{ marginTop: '1rem', color: '#1f2937' }}>Amount: ₹{total.toFixed(2)}</h3>
-
-      <div style={{ marginTop: '2rem', width: '100%', maxWidth: '300px', textAlign: 'left' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#4b5563' }}>Enter 12-digit UTR / Reference No:</label>
-        <input 
-          type="text" 
-          value={utr} 
-          onChange={(e) => setUtr(e.target.value)} 
-          placeholder="e.g. 312345678901" 
-          style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }}
-          maxLength={12}
-        />
-        <button 
-          onClick={handleVerifyUtr}
-          className="btn btn-primary"
-          style={{ width: '100%', padding: '0.75rem', background: '#22c55e' }}
-        >
-          Verify & Place Order
-        </button>
-        <button 
-          onClick={() => setShowPhonePeOverlay(false)}
-          className="btn"
-          style={{ width: '100%', padding: '0.75rem', background: 'transparent', color: '#6b7280', marginTop: '0.5rem' }}
-        >
-          Cancel
-        </button>
-      </div>
+      {phonePeState === 'processing' ? (
+        <>
+          <div className="qr-image-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '10px', display: 'inline-block', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <QRCodeSVG value={qrUrl} size={200} level="H" />
+          </div>
+          <h3 style={{ marginTop: '1rem', color: '#1f2937', marginBottom: '2rem' }}>Amount: ₹{total.toFixed(2)}</h3>
+          <div style={{ textAlign: 'center' }}>
+            <div className="phonepe-spinner" style={{ 
+              width: '40px', height: '40px', border: '4px solid #e0e0e0', borderTop: '4px solid #6739b7', 
+              borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 1s linear infinite' 
+            }}></div>
+            <p style={{ color: 'var(--text-secondary)' }}>Waiting for payment confirmation...</p>
+            <button 
+              onClick={() => setShowPhonePeOverlay(false)}
+              className="btn"
+              style={{ width: '100%', maxWidth: '200px', padding: '0.5rem', background: 'transparent', color: '#6b7280', marginTop: '1rem', border: '1px solid #d1d5db' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#22c55e', marginBottom: '1.5rem' }}>
+            <CheckCircle size={80} style={{ margin: '0 auto' }} />
+          </div>
+          <h2 style={{ color: '#22c55e' }}>Payment Successful!</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Transaction ID: TXN{txnId}</p>
+        </div>
+      )}
 
       <div style={{ position: 'absolute', bottom: '2rem', width: '100%', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
         <ShieldCheck size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
