@@ -128,9 +128,13 @@ const Medicines = () => {
               <div className="medicine-card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span className="medicine-category">{med.category}</span>
-                  {med.totalStock > 0 && med.totalStock < 20 && (
-                    <span style={{ fontSize: '0.65rem', color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                      Only {med.totalStock} left
+                  {med.totalStock > 0 ? (
+                    <span style={{ fontSize: '0.7rem', color: med.totalStock < 20 ? '#b45309' : '#15803d', background: med.totalStock < 20 ? '#fef3c7' : '#dcfce7', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                      Stock: {med.totalStock}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                      Out of Stock
                     </span>
                   )}
                 </div>
