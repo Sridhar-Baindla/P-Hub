@@ -677,6 +677,19 @@ app.delete('/sessions/:id', (req, res) => {
   });
 });
 
+// Serve static files in production
+const distPath = path.resolve(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  
+  // Catch-all route for React Router (must be last before listen)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  console.log("No dist folder found. Static files will not be served.");
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Professional Secure Server running at http://0.0.0.0:${PORT}`);
 });
