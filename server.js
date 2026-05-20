@@ -499,6 +499,31 @@ app.post('/orders', authenticateToken, (req, res) => {
   );
 });
 
+app.put('/orders/:id/status', authenticateToken, (req, res) => {
+  const { deliveryStatus } = req.body;
+  if (!deliveryStatus) return res.status(400).json({ error: "deliveryStatus is required" });
+
+  db.get("SELECT userId FROM orders WHERE id = ?", [req.params.id], (err, order) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    db.run("UPDATE orders SET deliveryStatus = ? WHERE id = ?", [deliveryStatus, req.params.id], function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      // Notify the user about the status update
+      const message = `Your order #${req.params.id} is now: ${deliveryStatus}.`;
+      const createdAt = new Date().toISOString();
+      db.run("INSERT INTO notifications (userId, message, read, createdAt) VALUES (?, ?, 0, ?)", 
+        [order.userId, message, createdAt], 
+        (err) => {
+          if (err) console.error("Notification error:", err);
+          res.json({ message: "Status updated successfully", deliveryStatus });
+        }
+      );
+    });
+  });
+});
+
 app.post('/orders/:id/approve', authenticateToken, (req, res) => {
   // Generate a random 4-digit OTP
   const otp = Math.floor(1000 + Math.random() * 9000).toString();

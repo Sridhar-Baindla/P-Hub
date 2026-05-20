@@ -10,6 +10,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [trackingOrder, setTrackingOrder] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -109,33 +110,46 @@ const Profile = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: order.status === 'Confirmed' ? 'var(--success)' : 'var(--primary)', fontWeight: 600 }}>
                           {order.status === 'Confirmed' ? <CheckCircle size={16} /> : <Clock size={16} />}
                           {order.status}
-                          {order.deliveryStatus && (
-                            <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', marginLeft: '0.5rem' }}>
-                              {order.deliveryStatus}
-                            </span>
-                          )}
                         </div>
-                        <button 
-                          onClick={() => generateInvoice(order)}
-                          style={{ 
-                            background: 'rgba(37, 99, 235, 0.1)', 
-                            border: 'none', 
-                            color: 'var(--primary)', 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '0.4rem', 
-                            marginTop: '0.75rem', 
-                            fontSize: '0.85rem', 
-                            fontWeight: 600,
-                            padding: '0.5rem 1rem',
-                            borderRadius: 'var(--radius-md)',
-                            transition: 'all 0.2s'
-                          }}
-                          title="Download PDF Invoice"
-                        >
-                          <Download size={14} /> Download Invoice
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => setTrackingOrder(order)}
+                            style={{ 
+                              background: 'var(--primary)', 
+                              border: 'none', 
+                              color: 'white', 
+                              cursor: 'pointer', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.4rem',
+                              fontSize: '0.85rem', 
+                              fontWeight: 600,
+                              padding: '0.5rem 1rem',
+                              borderRadius: 'var(--radius-md)'
+                            }}
+                          >
+                            <Package size={14} /> Track Order
+                          </button>
+                          <button 
+                            onClick={() => generateInvoice(order)}
+                            style={{ 
+                              background: 'rgba(37, 99, 235, 0.1)', 
+                              border: 'none', 
+                              color: 'var(--primary)', 
+                              cursor: 'pointer', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.4rem',
+                              fontSize: '0.85rem', 
+                              fontWeight: 600,
+                              padding: '0.5rem 1rem',
+                              borderRadius: 'var(--radius-md)',
+                            }}
+                            title="Download PDF Invoice"
+                          >
+                            <Download size={14} /> Invoice
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -182,6 +196,47 @@ const Profile = () => {
           </div>
         )}
       </main>
+
+      {/* Tracking Modal */}
+      {trackingOrder && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="modal-content" style={{ background: 'var(--surface)', padding: '2rem', borderRadius: 'var(--radius-lg)', width: '90%', maxWidth: '500px', position: 'relative' }}>
+            <button onClick={() => setTrackingOrder(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: 'var(--text-secondary)' }}>&times;</button>
+            <h2 style={{ marginBottom: '1.5rem' }}>Track Order #{trackingOrder.id}</h2>
+            
+            <div style={{ marginLeft: '1rem', position: 'relative' }}>
+              {/* Timeline Line */}
+              <div style={{ position: 'absolute', left: '11px', top: '20px', bottom: '40px', width: '2px', background: 'var(--border)', zIndex: 1 }}></div>
+              
+              {[
+                { label: 'Order Confirmed', status: ['Pending Review', 'Approved', 'Shipped', 'Out for Delivery', 'Delivered'] },
+                { label: 'Order Shipped', status: ['Shipped', 'Out for Delivery', 'Delivered'] },
+                { label: 'Out for Delivery', status: ['Out for Delivery', 'Delivered'] },
+                { label: 'Delivered', status: ['Delivered'] }
+              ].map((step, idx) => {
+                const isCompleted = trackingOrder.deliveryStatus ? step.status.includes(trackingOrder.deliveryStatus) : idx === 0;
+                return (
+                  <div key={idx} style={{ position: 'relative', paddingLeft: '40px', paddingBottom: '2.5rem', zIndex: 2 }}>
+                    <div style={{ 
+                      position: 'absolute', left: '0', top: '4px', width: '24px', height: '24px', borderRadius: '50%', 
+                      background: isCompleted ? 'var(--primary)' : 'var(--surface)', 
+                      border: `2px solid ${isCompleted ? 'var(--primary)' : 'var(--border)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      {isCompleted && <CheckCircle size={14} color="white" />}
+                    </div>
+                    <div style={{ fontWeight: isCompleted ? 700 : 500, color: isCompleted ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                      {step.label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} onClick={() => setTrackingOrder(null)}>Close Tracking</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

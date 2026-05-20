@@ -105,6 +105,26 @@ const Warehouse = () => {
     }
   };
 
+  const updateDeliveryStatus = async (orderId, status) => {
+    try {
+      const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ deliveryStatus: status })
+      });
+      if (res.ok) {
+        setUpdateMsg(`Order status updated to ${status}!`);
+        fetchOrders();
+        setTimeout(() => setUpdateMsg(''), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
 
 
   const [updatingItems, setUpdatingItems] = useState({});
@@ -463,14 +483,26 @@ const Warehouse = () => {
                          </span>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        {!order.deliveryStatus ? (
+                        {!order.deliveryStatus || order.deliveryStatus === 'Pending Review' ? (
                           <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => approveOrder(order.id)}>
                             Approve Order
                           </button>
                         ) : order.deliveryStatus === 'Approved' ? (
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: '#3b82f6', color: 'white' }} onClick={() => updateDeliveryStatus(order.id, 'Shipped')}>
+                              Mark Shipped
+                            </button>
+                          </div>
+                        ) : order.deliveryStatus === 'Shipped' ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: '#f59e0b', color: 'white' }} onClick={() => updateDeliveryStatus(order.id, 'Out for Delivery')}>
+                              Out for Delivery
+                            </button>
+                          </div>
+                        ) : order.deliveryStatus === 'Out for Delivery' ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                             <button className="btn btn-success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => verifyOTP(order.id, true)}>
-                              Complete Handover (Auto-Verify)
+                              Complete Handover
                             </button>
                           </div>
                         ) : (
