@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { ShieldCheck, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { API_URL } from '../config';
@@ -10,7 +10,6 @@ const MobilePaymentSimulator = () => {
   const [searchParams] = useSearchParams();
   const amount = searchParams.get('amount') || '0.00';
   const method = searchParams.get('method') || 'UPI';
-  const navigate = useNavigate();
 
   const [status, setStatus] = useState('pending'); // pending, processing, success
 

@@ -1,13 +1,21 @@
 import { useState, useContext, useEffect } from 'react';
 import { User, MapPin, Package, LogOut, Download, CheckCircle, Clock } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API_URL } from '../config';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
 const Profile = () => {
   const { user, logout, authenticatedFetch, token } = useContext(AppContext);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [trackingOrder, setTrackingOrder] = useState(null);

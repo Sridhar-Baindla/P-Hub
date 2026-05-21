@@ -10,7 +10,9 @@ import {
   Plus, 
   Edit2, 
   Trash2, 
-  X,
+  Check, 
+  X, 
+  Download,
   UploadCloud,
   Users,
   Activity

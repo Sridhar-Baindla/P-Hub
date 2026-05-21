@@ -1,11 +1,11 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, CreditCard, CheckCircle, ArrowLeft, QrCode, History, Search, ShieldCheck } from 'lucide-react';
+import { MapPin, Phone, CreditCard, CheckCircle, ArrowLeft, History, Search, ShieldCheck } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import { API_URL } from '../config';
 import './Checkout.css';
-import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
+import { io } from 'socket.io-client';
 
 const cityPincodeMap = {
   'Hyderabad': '500001', 'Mumbai': '400001', 'Delhi': '110001',
@@ -21,14 +21,13 @@ const Checkout = () => {
   const [orderPlacing, setOrderPlacing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [showQR, setShowQR] = useState(false);
   const [previousAddresses, setPreviousAddresses] = useState([]);
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [txnId, setTxnId] = useState('');
   const [qrUrl, setQrUrl] = useState('');
-  const [utr, setUtr] = useState('');
   const [showPhonePeOverlay, setShowPhonePeOverlay] = useState(false);
+  const [txnId, setTxnId] = useState('');
+  const socketRef = useRef(null);
   
   const [formData, setFormData] = useState({
     address: '', city: '', pincode: '', phone: ''
@@ -108,9 +107,6 @@ const Checkout = () => {
       phone: addr.phone
     });
   };
-
-  const [phonePeState, setPhonePeState] = useState('idle'); // idle, processing, success
-
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!paymentMethod) {
@@ -119,18 +115,40 @@ const Checkout = () => {
     }
 
     if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
-      const upiUrl = `upi://pay?pa=6079090876081013@ybl&pn=PHUB%20Pharmacy&am=${total.toFixed(2)}&cu=INR`;
-      setQrUrl(upiUrl);
+      const generatedTxn = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      setTxnId(generatedTxn);
+      const simulatorUrl = `${window.location.origin}/pay/${generatedTxn}?amount=${total.toFixed(2)}&method=${paymentMethod}`;
+      setQrUrl(simulatorUrl);
       setShowPhonePeOverlay(true);
     } else {
       processOrder();
     }
   };
 
-  const handleVerifyUtr = () => {
-    setShowPhonePeOverlay(false);
-    processOrder('Pending Verification', 'Self-Confirmed');
-  };
+  useEffect(() => {
+    if (showPhonePeOverlay && txnId) {
+      const socketUrl = API_URL || window.location.origin;
+      const socket = io(socketUrl);
+      socketRef.current = socket;
+
+      socket.emit('join_payment_room', txnId);
+
+      socket.on('payment_status', (data) => {
+        if (data.status === 'success') {
+          socket.disconnect();
+          setShowPhonePeOverlay(false);
+          processOrder('Paid', txnId);
+        }
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [showPhonePeOverlay, txnId]);
 
   const processOrder = async (pStatus = 'Pending', providedUtr = '') => {
     setOrderPlacing(true);
@@ -158,15 +176,25 @@ const Checkout = () => {
       });
 
       if (!res.ok) throw new Error('Order creation failed');
+      const orderResult = await res.json();
 
       // Clear cart
       for (const item of cartItems) {
         await authenticatedFetch(`${API_URL}/cart/${item.id}`, { method: 'DELETE' });
       }
 
-      setOrderSuccess(true);
       fetchCartCount();
-      setTimeout(() => navigate('/profile'), 3000);
+      navigate('/order-confirmed', {
+        state: {
+          orderId: orderResult.id,
+          transactionId: orderResult.transactionId || providedUtr,
+          total: total,
+          shippingAddress: order.shippingAddress,
+          contactNumber: order.contactNumber,
+          items: order.items,
+          paymentMethod
+        }
+      });
     } catch (err) {
       console.error('Checkout error:', err);
       alert(err.message);
@@ -192,7 +220,15 @@ const Checkout = () => {
       <h3 style={{ marginTop: '1rem', color: '#1f2937' }}>Amount: ₹{total.toFixed(2)}</h3>
 
       <div style={{ marginTop: '2rem', width: '100%', maxWidth: '300px', textAlign: 'left' }}>
-
+        <a 
+          href={qrUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="btn btn-primary"
+          style={{ width: '100%', display: 'flex', textDecoration: 'none', marginBottom: '0.5rem', background: '#6739b7', color: 'white' }}
+        >
+          Open Simulator (Test)
+        </a>
         <button 
           onClick={() => setShowPhonePeOverlay(false)}
           className="btn"

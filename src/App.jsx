@@ -23,6 +23,7 @@ import AdminLogin from './pages/AdminLogin';
 import WarehouseLogin from './pages/WarehouseLogin';
 import Checkout from './pages/Checkout';
 import MobilePaymentSimulator from './pages/MobilePaymentSimulator';
+import OrderConfirmed from './pages/OrderConfirmed';
 
 function App() {
   const { user } = useContext(AppContext);
@@ -64,6 +65,7 @@ function App() {
           <Route path="/returns" element={<Returns />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/pay/:txnId" element={<MobilePaymentSimulator />} />
+          <Route path="/order-confirmed" element={<OrderConfirmed />} />
           {/* Catch-all: any unknown URL → Home instead of blank page */}
           <Route path="*" element={<Navigate to="/" replace />} />
 

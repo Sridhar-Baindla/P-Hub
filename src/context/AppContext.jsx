@@ -27,6 +27,7 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     fetchCartCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
   const fetchCartCount = () => {
@@ -48,7 +49,7 @@ export const AppProvider = ({ children }) => {
       .catch(err => console.error(err));
   };
 
-  const checkDeviceLimit = async (userId) => {
+  const checkDeviceLimit = async () => {
     // Device limit has been removed to allow multi-device login.
     return true;
   };
@@ -93,7 +94,7 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
     } catch (storageError) {
         console.error("Failed to save login state:", storageError);
-        throw new Error("Could not save login information. Please check your browser settings.");
+        throw new Error("Could not save login information. Please check your browser settings.", { cause: storageError });
     }
   };
 
