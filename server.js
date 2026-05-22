@@ -167,7 +167,7 @@ const initDb = () => {
 initDb();
 
 // Auth Routes
-app.post('/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, role } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -189,7 +189,7 @@ app.post('/auth/register', async (req, res) => {
   );
 });
 
-app.post('/auth/login', (req, res) => {
+app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
 
   // 1. Check standard users table (Customers and Admins)
@@ -228,7 +228,7 @@ app.post('/auth/login', (req, res) => {
 });
 
 // Stock Routes
-app.get('/stock', (req, res) => {
+app.get('/api/stock', (req, res) => {
   const { location } = req.query;
   let query = `
     SELECT s.*, m.name, m.image, m.manufacturer, m.category, m.price, m.discountedPrice, m.description, m.expiryDate 
@@ -246,7 +246,7 @@ app.get('/stock', (req, res) => {
   });
 });
 
-app.post('/stock', authenticateToken, isWarehouseOrAdmin, (req, res) => {
+app.post('/api/stock', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { medicineId, location, quantity } = req.body;
   db.run("INSERT INTO stock (medicineId, location, quantity) VALUES (?, ?, ?)", [medicineId, location, quantity], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -254,7 +254,7 @@ app.post('/stock', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   });
 });
 
-app.patch('/stock/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
+app.patch('/api/stock/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { quantity } = req.body;
   db.run("UPDATE stock SET quantity = ? WHERE id = ?", [quantity, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -263,7 +263,7 @@ app.patch('/stock/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
 });
 
 // Medicine Routes (Public)
-app.get('/medicines', (req, res) => {
+app.get('/api/medicines', (req, res) => {
   const { name, category, q } = req.query;
   let query = `
     SELECT m.*, COALESCE(SUM(s.quantity), 0) as totalStock 
@@ -296,7 +296,7 @@ app.get('/medicines', (req, res) => {
   });
 });
 
-app.get('/medicines/:id', (req, res) => {
+app.get('/api/medicines/:id', (req, res) => {
   db.get("SELECT * FROM medicines WHERE id = ?", [req.params.id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(row);
@@ -304,7 +304,7 @@ app.get('/medicines/:id', (req, res) => {
 });
 
 // Admin Medicine Routes (Protected in real app, but for now open or check role)
-app.post('/medicines', authenticateToken, isAdmin, (req, res) => {
+app.post('/api/medicines', authenticateToken, isAdmin, (req, res) => {
   const { name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock } = req.body;
   db.run(`INSERT INTO medicines (name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -316,7 +316,7 @@ app.post('/medicines', authenticateToken, isAdmin, (req, res) => {
   );
 });
 
-app.patch('/medicines/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
+app.patch('/api/medicines/:id', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   // Remove fields that don't exist in the DB anymore
   const { salt, ...updateData } = req.body;
   const fields = Object.keys(updateData);
@@ -333,7 +333,7 @@ app.patch('/medicines/:id', authenticateToken, isWarehouseOrAdmin, (req, res) =>
 });
 
 // Unified Admin Inventory Route (Handles both Medicine + Initial Stock)
-app.post('/admin/add-inventory', authenticateToken, isWarehouseOrAdmin, (req, res) => {
+app.post('/api/admin/add-inventory', authenticateToken, isWarehouseOrAdmin, (req, res) => {
   const { name, description, manufacturer, price, discountedPrice, expiryDate, category, image, quantity, location } = req.body;
   
   db.run(`INSERT INTO medicines (name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock) 
@@ -360,7 +360,7 @@ app.post('/admin/add-inventory', authenticateToken, isWarehouseOrAdmin, (req, re
   );
 });
 
-app.delete('/medicines/:id', authenticateToken, isAdmin, (req, res) => {
+app.delete('/api/medicines/:id', authenticateToken, isAdmin, (req, res) => {
   db.run("DELETE FROM medicines WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     // Also delete associated stock
@@ -370,7 +370,7 @@ app.delete('/medicines/:id', authenticateToken, isAdmin, (req, res) => {
 });
 
 // Protected Cart Routes
-app.get('/cart', authenticateToken, (req, res) => {
+app.get('/api/cart', authenticateToken, (req, res) => {
   const userId = req.user.id;
   const expand = req.query._expand;
 
@@ -405,7 +405,7 @@ app.get('/cart', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/cart', authenticateToken, (req, res) => {
+app.post('/api/cart', authenticateToken, (req, res) => {
   const { medicineId, quantity } = req.body;
   const userId = req.user.id;
 
@@ -418,7 +418,7 @@ app.post('/cart', authenticateToken, (req, res) => {
   );
 });
 
-app.patch('/cart/:id', authenticateToken, (req, res) => {
+app.patch('/api/cart/:id', authenticateToken, (req, res) => {
   const { quantity } = req.body;
   db.run("UPDATE cart SET quantity = ? WHERE id = ? AND userId = ?",
     [quantity, req.params.id, req.user.id],
@@ -429,7 +429,7 @@ app.patch('/cart/:id', authenticateToken, (req, res) => {
   );
 });
 
-app.delete('/cart/:id', authenticateToken, (req, res) => {
+app.delete('/api/cart/:id', authenticateToken, (req, res) => {
   db.run("DELETE FROM cart WHERE id = ? AND userId = ?",
     [req.params.id, req.user.id],
     function (err) {
@@ -440,7 +440,7 @@ app.delete('/cart/:id', authenticateToken, (req, res) => {
 });
 
 // Protected Order Routes
-app.get('/orders', authenticateToken, (req, res) => {
+app.get('/api/orders', authenticateToken, (req, res) => {
   const isAdmin = req.user.role === 'admin';
   const isWarehouse = req.user.role === 'warehouse_manager';
   let query = "SELECT * FROM orders";
@@ -461,7 +461,7 @@ app.get('/orders', authenticateToken, (req, res) => {
 });
 
 // Admin Statistics Route
-app.get('/admin/stats', authenticateToken, (req, res) => {
+app.get('/api/admin/stats', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: "Access denied" });
 
   const stats = {};
@@ -484,7 +484,7 @@ app.get('/admin/stats', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/orders', authenticateToken, (req, res) => {
+app.post('/api/orders', authenticateToken, (req, res) => {
   const { items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, transactionId: providedTxnId } = req.body;
   const userId = req.user.id;
   const orderDate = new Date().toISOString();
@@ -520,7 +520,7 @@ app.post('/orders', authenticateToken, (req, res) => {
   });
 });
 
-app.put('/orders/:id/status', authenticateToken, (req, res) => {
+app.put('/api/orders/:id/status', authenticateToken, (req, res) => {
   const { deliveryStatus } = req.body;
   if (!deliveryStatus) return res.status(400).json({ error: "deliveryStatus is required" });
 
@@ -545,7 +545,7 @@ app.put('/orders/:id/status', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/orders/:id/approve', authenticateToken, (req, res) => {
+app.post('/api/orders/:id/approve', authenticateToken, (req, res) => {
   // Generate a random 4-digit OTP
   const otp = Math.floor(1000 + Math.random() * 9000).toString();
   
@@ -575,7 +575,7 @@ app.post('/orders/:id/approve', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/orders/:id/verify-otp', authenticateToken, (req, res) => {
+app.post('/api/orders/:id/verify-otp', authenticateToken, (req, res) => {
   const { otp, skipOTP } = req.body;
   const isAuthorized = req.user.role === 'warehouse_manager' || req.user.role === 'admin';
 
@@ -595,14 +595,14 @@ app.post('/orders/:id/verify-otp', authenticateToken, (req, res) => {
 });
 
 // Prescription Routes
-app.get('/prescriptions', (req, res) => {
+app.get('/api/prescriptions', (req, res) => {
   db.all("SELECT * FROM prescriptions ORDER BY id DESC", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-app.post('/prescriptions', (req, res) => {
+app.post('/api/prescriptions', (req, res) => {
   const { userId, customerName, phone, address, fileName } = req.body;
   const uploadedAt = new Date().toISOString();
   db.run(`INSERT INTO prescriptions (userId, customerName, phone, address, fileName, uploadedAt) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -615,7 +615,7 @@ app.post('/prescriptions', (req, res) => {
 });
 
 // Notifications Routes
-app.get('/notifications', (req, res) => {
+app.get('/api/notifications', (req, res) => {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: "userId required" });
   
@@ -625,7 +625,7 @@ app.get('/notifications', (req, res) => {
   });
 });
 
-app.patch('/notifications/:id', (req, res) => {
+app.patch('/api/notifications/:id', (req, res) => {
   const { read } = req.body;
   db.run("UPDATE notifications SET read = ? WHERE id = ?", [read ? 1 : 0, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -634,14 +634,14 @@ app.patch('/notifications/:id', (req, res) => {
 });
 
 // Warehouse Admin Routes
-app.get('/warehouseAdmins', (req, res) => {
+app.get('/api/warehouseAdmins', (req, res) => {
   db.all("SELECT * FROM warehouseAdmins", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-app.post('/warehouseAdmins', async (req, res) => {
+app.post('/api/warehouseAdmins', async (req, res) => {
   const { name, email, password, location } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
   db.run("INSERT INTO warehouseAdmins (name, email, password, location) VALUES (?, ?, ?, ?)",
@@ -653,7 +653,7 @@ app.post('/warehouseAdmins', async (req, res) => {
   );
 });
 
-app.delete('/warehouseAdmins/:id', authenticateToken, isAdmin, (req, res) => {
+app.delete('/api/warehouseAdmins/:id', authenticateToken, isAdmin, (req, res) => {
   db.run("DELETE FROM warehouseAdmins WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
@@ -661,7 +661,7 @@ app.delete('/warehouseAdmins/:id', authenticateToken, isAdmin, (req, res) => {
 });
 
 // Warehouse Auth
-app.post('/auth/warehouse/login', (req, res) => {
+app.post('/api/auth/warehouse/login', (req, res) => {
   const { email, password } = req.body;
   db.get("SELECT * FROM warehouseAdmins WHERE email = ?", [email], async (err, admin) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -676,7 +676,7 @@ app.post('/auth/warehouse/login', (req, res) => {
 });
 
 // Payment Verification Simulation (Secure)
-app.post('/payments/verify', authenticateToken, (req, res) => {
+app.post('/api/payments/verify', authenticateToken, (req, res) => {
   const { amount, method } = req.body;
 
   // Simulation logic: Professional grade checksum/verification
@@ -692,7 +692,7 @@ app.post('/payments/verify', authenticateToken, (req, res) => {
 });
 
 // Session Management
-app.get('/sessions', (req, res) => {
+app.get('/api/sessions', (req, res) => {
   const { userId, deviceId } = req.query;
   let query = "SELECT * FROM sessions WHERE userId = ?";
   let params = [userId];
@@ -708,7 +708,7 @@ app.get('/sessions', (req, res) => {
   });
 });
 
-app.post('/sessions', (req, res) => {
+app.post('/api/sessions', (req, res) => {
   const { userId, deviceId, lastActive } = req.body;
   db.run("INSERT INTO sessions (userId, deviceId, lastActive) VALUES (?, ?, ?)",
     [userId, deviceId, lastActive],
@@ -719,7 +719,7 @@ app.post('/sessions', (req, res) => {
   );
 });
 
-app.delete('/sessions/:id', (req, res) => {
+app.delete('/api/sessions/:id', (req, res) => {
   db.run("DELETE FROM sessions WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
@@ -728,7 +728,7 @@ app.delete('/sessions/:id', (req, res) => {
 
 // Explicit API 404 Handler - prevents API requests from falling through to the React static index.html
 app.use((req, res, next) => {
-  const apiPrefixes = ['/auth', '/medicines', '/cart', '/orders', '/stock', '/payments', '/admin', '/warehouseAdmins', '/sessions', '/prescriptions', '/notifications'];
+  const apiPrefixes = ['/api'];
   if (apiPrefixes.some(prefix => req.url.startsWith(prefix))) {
     return res.status(404).json({ error: `API endpoint not found or method not allowed: ${req.method} ${req.url}` });
   }
@@ -749,7 +749,7 @@ if (fs.existsSync(distPath)) {
 }
 
 // Endpoint for mobile phone to trigger payment success
-app.post('/payments/simulate-webhook', (req, res) => {
+app.post('/api/payments/simulate-webhook', (req, res) => {
   const { txnId, status } = req.body;
   if (!txnId) return res.status(400).json({ error: "txnId required" });
   
