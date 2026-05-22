@@ -18,7 +18,11 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = 'phub_secure_secret_key_2026';
 const dbPath = process.env.DB_PATH || path.resolve(__dirname, 'phub.db');
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -720,6 +724,15 @@ app.delete('/sessions/:id', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
+});
+
+// Explicit API 404 Handler - prevents API requests from falling through to the React static index.html
+app.use((req, res, next) => {
+  const apiPrefixes = ['/auth', '/medicines', '/cart', '/orders', '/stock', '/payments', '/admin', '/warehouseAdmins', '/sessions', '/prescriptions', '/notifications'];
+  if (apiPrefixes.some(prefix => req.url.startsWith(prefix))) {
+    return res.status(404).json({ error: `API endpoint not found or method not allowed: ${req.method} ${req.url}` });
+  }
+  next();
 });
 
 // Serve static files in production

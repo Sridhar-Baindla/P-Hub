@@ -59,11 +59,12 @@ const AuthModal = ({ isOpen, onClose }) => {
         try {
           data = text ? JSON.parse(text) : {};
         } catch (err) {
-          throw new Error(`Server error (${response.status}): Invalid response format.`);
+          const preview = text.substring(0, 100).replace(/\n/g, ' ');
+          throw new Error(`Server error (${response.status}): Expected JSON but received HTML/Text. Content: ${preview}...`);
         }
 
         if (!response.ok) {
-          throw new Error(data.error || `Authentication failed (Status: ${response.status}, Body: ${text || 'empty'})`);
+          throw new Error(data.error || `Authentication failed with status ${response.status}`);
         }
         const canLogin = await checkDeviceLimit(data.user.id);
 

@@ -1,23 +1,23 @@
 const getApiUrl = () => {
-  // If VITE_API_URL is explicitly set (like in production Vercel/Netlify pointing to a deployed backend), use it.
+  let url = '';
   if (import.meta.env && import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-
-  // Fix for "Server Error (404)" on other devices:
-  // When running Vite dev server (port 5173) and accessing from a mobile device (e.g. 192.168.x.x),
-  // the Vite proxy sometimes fails to forward POST requests correctly, returning a 404 HTML page.
-  // We can bypass the proxy by pointing directly to the Express server on port 5000.
-  if (typeof window !== 'undefined') {
+    url = import.meta.env.VITE_API_URL;
+  } else if (typeof window !== 'undefined') {
     const { hostname, port, protocol } = window.location;
+    // For local dev, Vite proxy (5173) handles requests, but direct access to Express (5000) 
+    // is sometimes more reliable across LAN if proxy is misconfigured.
     if (port === '5173' || port === '5174') {
-      return `${protocol}//${hostname}:5000`;
+      url = `${protocol}//${hostname}:5000`;
     }
   }
 
-  // Otherwise, use relative paths ('').
-  // This works perfectly in production where Node.js serves the frontend on the same port.
-  return '';
+  // Prevent 301 redirects dropping POST bodies: upgrade to https if the page is loaded over https
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    url = url.replace('http://', 'https://');
+  }
+
+  // Remove trailing slashes to prevent double-slash in fetch calls
+  return url.replace(/\/+$/, '');
 };
 
 export const API_URL = getApiUrl();
