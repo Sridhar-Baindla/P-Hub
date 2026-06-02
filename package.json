@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "concurrently \"vite --host\" \"node server.js\"",
-    "server": "node server.js",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "start": "node Backend/server.js",
+    "dev": "concurrently \"vite Frontend --host\" \"node Backend/server.js\"",
+    "server": "node Backend/server.js",
+    "build": "vite build Frontend",
+    "lint": "eslint Frontend",
+    "preview": "vite preview Frontend"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

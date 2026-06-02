@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = 'phub_secure_secret_key_2026';
-const dbPath = process.env.DB_PATH || path.resolve(__dirname, 'phub.db');
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../Database/phub.db');
 
 app.use(cors({
   origin: '*',
@@ -736,7 +736,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files in production
-const distPath = path.resolve(__dirname, 'dist');
+const distPath = path.resolve(__dirname, '../Frontend/dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   
