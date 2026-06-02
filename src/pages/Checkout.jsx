@@ -28,7 +28,7 @@ const Checkout = () => {
   const [showPhonePeOverlay, setShowPhonePeOverlay] = useState(false);
   const [txnId, setTxnId] = useState('');
   const socketRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
     address: '', city: '', pincode: '', phone: ''
   });
@@ -43,7 +43,7 @@ const Checkout = () => {
       try {
         const cartRes = await authenticatedFetch(`${API_URL}/cart?_expand=medicine`);
         const cartData = await cartRes.json();
-        
+
         if (cartData.length === 0) {
           navigate('/cart');
           return;
@@ -52,14 +52,14 @@ const Checkout = () => {
 
         const ordersRes = await authenticatedFetch(`${API_URL}/orders`);
         const ordersData = await ordersRes.json();
-        
+
         const addresses = ordersData.map(order => ({
           fullAddress: order.shippingAddress,
           phone: order.contactNumber
-        })).filter((addr, index, self) => 
+        })).filter((addr, index, self) =>
           index === self.findIndex((t) => t.fullAddress === addr.fullAddress)
         ).reverse();
-        
+
         setPreviousAddresses(addresses);
       } catch (err) {
         console.error('Error loading checkout data:', err);
@@ -83,7 +83,7 @@ const Checkout = () => {
     setFormData({ ...formData, [name]: value });
 
     if (name === 'city') {
-      const filtered = Object.keys(cityPincodeMap).filter(city => 
+      const filtered = Object.keys(cityPincodeMap).filter(city =>
         city.toLowerCase().includes(value.toLowerCase())
       );
       setCitySuggestions(filtered);
@@ -117,8 +117,14 @@ const Checkout = () => {
     if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
       const generatedTxn = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
       setTxnId(generatedTxn);
-      const simulatorUrl = `${window.location.origin}/pay/${generatedTxn}?amount=${total.toFixed(2)}&method=${paymentMethod}`;
-      setQrUrl(simulatorUrl);
+
+      let scheme = 'upi://pay';
+      if (paymentMethod === 'PhonePe') scheme = 'phonepe://pay';
+      else if (paymentMethod === 'Google Pay') scheme = 'tez://upi/pay';
+      else if (paymentMethod === 'Paytm') scheme = 'paytmmp://pay';
+
+      const upiUrl = `${scheme}?pa=6079090876081013@axl&pn=BAINDLA%20SRIDHAR&mc=0000&mode=02&purpose=00&tr=${generatedTxn}&am=${total.toFixed(2)}&cu=INR`;
+      setQrUrl(upiUrl);
       setShowPhonePeOverlay(true);
     } else {
       processOrder();
@@ -214,22 +220,13 @@ const Checkout = () => {
         <p style={{ color: 'var(--text-secondary)' }}>Scan with any UPI App (GPay, PhonePe, Paytm)</p>
       </div>
 
-      <div className="qr-image-wrapper" style={{ background: '#fff', padding: '15px', borderRadius: '10px', display: 'inline-block', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-        <QRCodeSVG value={qrUrl} size={200} level="H" />
+      <div className="qr-image-wrapper" style={{ background: '#fff', padding: '10px', borderRadius: '10px', display: 'inline-block', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+        <QRCodeSVG value={qrUrl} size={230} />
       </div>
       <h3 style={{ marginTop: '1rem', color: '#1f2937' }}>Amount: ₹{total.toFixed(2)}</h3>
 
       <div style={{ marginTop: '2rem', width: '100%', maxWidth: '300px', textAlign: 'left' }}>
-        <a 
-          href={qrUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="btn btn-primary"
-          style={{ width: '100%', display: 'flex', textDecoration: 'none', marginBottom: '0.5rem', background: '#6739b7', color: 'white' }}
-        >
-          Open Simulator (Test)
-        </a>
-        <button 
+        <button
           onClick={() => setShowPhonePeOverlay(false)}
           className="btn"
           style={{ width: '100%', padding: '0.75rem', background: 'transparent', color: '#6b7280', marginTop: '0.5rem' }}
@@ -266,9 +263,9 @@ const Checkout = () => {
       <button onClick={() => navigate('/cart')} className="back-btn">
         <ArrowLeft size={20} /> Back to Cart
       </button>
-      
+
       <h1>Secure Checkout</h1>
-      
+
       <div className="checkout-layout">
         <div className="checkout-form-section">
           {previousAddresses.length > 0 && (
@@ -330,8 +327,8 @@ const Checkout = () => {
                 { id: 'Paytm', name: 'Paytm', icon: 'https://download.logo.wine/logo/Paytm/Paytm-Logo.wine.png' },
                 { id: 'COD', name: 'Cash on Delivery', icon: null }
               ].map(method => (
-                <div 
-                  key={method.id} 
+                <div
+                  key={method.id}
                   className={`payment-option ${paymentMethod === method.id ? 'active' : ''}`}
                   onClick={() => { setPaymentMethod(method.id); setShowQR(['PhonePe', 'Google Pay', 'Paytm'].includes(method.id)); }}
                 >
@@ -361,9 +358,9 @@ const Checkout = () => {
             <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
             <div className="summary-row"><span>Delivery Fee</span><span style={{ color: 'var(--success)', fontWeight: 600 }}>FREE</span></div>
             <div className="summary-total"><span>Total Amount</span><span>₹{total.toFixed(2)}</span></div>
-            
-            <button 
-              className="btn btn-primary place-order-btn" 
+
+            <button
+              className="btn btn-primary place-order-btn"
               onClick={handlePlaceOrder}
               disabled={orderPlacing || !formData.address || !formData.phone || !paymentMethod}
             >
