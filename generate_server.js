@@ -1,4 +1,7 @@
-import express from 'express';
+import fs from 'fs';
+import path from 'path';
+
+const content = `import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import bcrypt from 'bcryptjs';
@@ -28,7 +31,7 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Debug Logging Middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(\`[\${new Date().toISOString()}] \${req.method} \${req.url}\`);
   if (req.method === 'POST') {
     console.log('Body:', req.body);
   }
@@ -402,7 +405,7 @@ app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
     
     const notif = new models.Notification({ 
       userId: order.userId, 
-      message: `Your order #${req.params.id} is now: ${deliveryStatus}.`, 
+      message: \`Your order #\${req.params.id} is now: \${deliveryStatus}.\`, 
       createdAt: new Date().toISOString() 
     });
     await notif.save();
@@ -425,7 +428,7 @@ app.post('/api/orders/:id/approve', authenticateToken, async (req, res) => {
     
     const notif = new models.Notification({ 
       userId: order.userId, 
-      message: `Your order #${req.params.id} has been approved. Your delivery OTP is: ${otp}. Please share this with the delivery partner.`, 
+      message: \`Your order #\${req.params.id} has been approved. Your delivery OTP is: \${otp}. Please share this with the delivery partner.\`, 
       createdAt: new Date().toISOString() 
     });
     await notif.save();
@@ -601,7 +604,7 @@ app.delete('/api/sessions/:id', async (req, res) => {
 app.use((req, res, next) => {
   const apiPrefixes = ['/api'];
   if (apiPrefixes.some(prefix => req.url.startsWith(prefix))) {
-    return res.status(404).json({ error: `API endpoint not found or method not allowed: ${req.method} ${req.url}` });
+    return res.status(404).json({ error: \`API endpoint not found or method not allowed: \${req.method} \${req.url}\` });
   }
   next();
 });
@@ -622,7 +625,7 @@ app.post('/api/payments/simulate-webhook', (req, res) => {
   const { txnId, status } = req.body;
   if (!txnId) return res.status(400).json({ error: "txnId required" });
   
-  io.to(`payment_${txnId}`).emit('payment_status', { txnId, status });
+  io.to(\`payment_\${txnId}\`).emit('payment_status', { txnId, status });
   res.json({ success: true });
 });
 
@@ -636,10 +639,14 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
   socket.on('join_payment_room', (txnId) => {
-    socket.join(`payment_${txnId}`);
+    socket.join(\`payment_\${txnId}\`);
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Professional Secure Server running at http://0.0.0.0:${PORT}`);
+  console.log(\`Professional Secure Server running at http://0.0.0.0:\${PORT}\`);
 });
+`;
+
+fs.writeFileSync(path.resolve('./Backend/server.js'), content, 'utf8');
+console.log('Successfully generated Backend/server.js');
