@@ -35,9 +35,14 @@ app.use((req, res, next) => {
   next();
 });
 
-mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/phub')
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB Connection Error:", err));
+mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/phub', {
+  serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of hanging
+})
+  .then(() => console.log("MongoDB Connected Successfully"))
+  .catch(err => {
+    console.error("MongoDB Connection Error:", err.message);
+    console.error("Please ensure your MONGO_URI is set correctly and MongoDB is running.");
+  });
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {

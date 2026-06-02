@@ -35,7 +35,7 @@ const Login = () => {
     setLoading(true);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for Render cold starts
 
     try {
       const endpoint = isLoginView ? '/auth/login' : '/auth/register';
