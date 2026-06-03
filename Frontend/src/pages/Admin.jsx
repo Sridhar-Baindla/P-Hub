@@ -147,7 +147,7 @@ const Admin = () => {
   const fetchInventory = () => {
     fetch(`${API_URL}/medicines`)
       .then(res => res.json())
-      .then(data => setInventory(data))
+      .then(data => setInventory(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
   };
 
@@ -159,13 +159,13 @@ const Admin = () => {
     if (activeTab === 'prescriptions') {
       fetch(`${API_URL}/prescriptions`)
         .then(res => res.json())
-        .then(data => setPrescriptions(data))
+        .then(data => setPrescriptions(Array.isArray(data) ? data : []))
         .catch(err => console.error(err));
     }
     if (activeTab === 'managers') {
       fetch(`${API_URL}/warehouseAdmins`)
         .then(res => res.json())
-        .then(data => setManagers(data))
+        .then(data => setManagers(Array.isArray(data) ? data : []))
         .catch(err => console.error(err));
     }
     if (activeTab === 'orders') {
@@ -199,7 +199,9 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${storedToken}` }
       })
         .then(res => res.json())
-        .then(data => setDashboardStats(data))
+        .then(data => setDashboardStats(data && typeof data === 'object' && !data.error ? data : {
+          totalSales: 0, activeOrders: 0, totalPatients: 0, pendingRx: 0
+        }))
         .catch(err => console.error(err));
     }
   }, [activeTab]);

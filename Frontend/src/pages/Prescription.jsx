@@ -24,7 +24,7 @@ const Prescription = () => {
     if (!user) return;
     fetch(`${API_URL}/prescriptions?userId=${user.id}`)
       .then(res => res.json())
-      .then(data => setPastPrescriptions(data))
+      .then(data => setPastPrescriptions(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
   }, [user]);
 

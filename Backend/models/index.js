@@ -16,7 +16,8 @@ const medicineSchema = new mongoose.Schema({
   expiryDate: String,
   category: String,
   image: String,
-  inStock: Boolean
+  inStock: Boolean,
+  boxNumber: String
 });
 
 const cartSchema = new mongoose.Schema({

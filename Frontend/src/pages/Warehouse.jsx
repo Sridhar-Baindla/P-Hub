@@ -255,6 +255,7 @@ const Warehouse = () => {
   const handleSelectExisting = (med) => {
     setNewStock({
       ...newStock,
+      medicineId: med.id || med._id,
       name: med.name,
       description: med.description || '',
       manufacturer: med.manufacturer || '',
@@ -296,6 +297,7 @@ const Warehouse = () => {
            (item.description || '').toLowerCase().includes(q) ||
            (item.manufacturer || '').toLowerCase().includes(q) ||
            (item.category || '').toLowerCase().includes(q) ||
+           (item.boxNumber || '').toLowerCase().includes(q) ||
            (item.expiryDate && item.expiryDate.toLowerCase().includes(q)) ||
            (item.quantity || 0).toString().includes(q);
   });
@@ -394,7 +396,14 @@ const Warehouse = () => {
                   </div>
                   <div className="stock-info">
                     <div className="stock-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3>{item.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0 }}>{item.name}</h3>
+                        {item.boxNumber && (
+                          <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid var(--primary)', display: 'inline-block' }}>
+                            Box {item.boxNumber}
+                          </span>
+                        )}
+                      </div>
                       <button className="edit-stock-btn" onClick={() => handleOpenEdit(item, item)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
                         <Edit2 size={18} />
                       </button>

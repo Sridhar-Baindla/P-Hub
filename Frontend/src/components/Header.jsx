@@ -27,7 +27,7 @@ const Header = () => {
     if (user) {
       fetch(`${API_URL}/notifications?userId=${user.id}`)
         .then(res => res.json())
-        .then(data => setNotifications(data))
+        .then(data => setNotifications(Array.isArray(data) ? data : []))
         .catch(err => console.error(err));
     }
   }, [user]);
@@ -61,7 +61,7 @@ const Header = () => {
     if (query.length > 1) {
       fetch(`${API_URL}/medicines?q=${encodeURIComponent(query)}`)
         .then(res => res.json())
-        .then(data => setSearchResults(data));
+        .then(data => setSearchResults(Array.isArray(data) ? data : []));
     } else {
       setSearchResults([]);
     }

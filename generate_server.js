@@ -12,7 +12,10 @@ import { fileURLToPath } from 'url';
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import * as models from './models/index.js';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,9 +41,74 @@ app.use((req, res, next) => {
   next();
 });
 
-mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/phub')
-  .then(() => console.log("MongoDB Connected"))
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (!mongoUri) {
+  const mongoServer = await MongoMemoryServer.create();
+  mongoUri = mongoServer.getUri();
+  console.log("No MONGO_URI provided. Started in-memory MongoDB at " + mongoUri);
+}
+
+mongoose.connect(mongoUri, {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000,
+  maxPoolSize: 50,
+  family: 4 // Use IPv4, skip trying IPv6 which causes timeouts on some networks
+})
+  .then(async () => {
+    console.log("MongoDB Connected");
+    try {
+      const count = await models.User.countDocuments();
+      if (count === 0 && fs.existsSync(path.resolve(__dirname, '../Database/db.json'))) {
+        const dbData = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../Database/db.json'), 'utf8'));
+        if (dbData.users) {
+          for (const u of dbData.users) {
+            const hashedPassword = await bcrypt.hash(u.password, 10);
+            await models.User.create({ name: u.name, email: u.email, password: hashedPassword, role: u.role || 'user' });
+          }
+        }
+        if (dbData.warehouseAdmins) {
+          for (const admin of dbData.warehouseAdmins) {
+            const hashedPassword = await bcrypt.hash(admin.password, 10);
+            await models.WarehouseAdmin.create({ name: admin.name, email: admin.email, password: hashedPassword, location: admin.location });
+          }
+        }
+        console.log("Seeded database from db.json");
+      }
+      
+      // Auto-backfill box numbers for existing medicines that lack one
+      const unboxedMedicines = await models.Medicine.find({ $or: [{ boxNumber: { $exists: false } }, { boxNumber: null }] });
+      if (unboxedMedicines.length > 0) {
+        for (const med of unboxedMedicines) {
+          med.boxNumber = await generateBoxNumber(med.name);
+          await med.save();
+        }
+        console.log(\`Backfilled box numbers for \${unboxedMedicines.length} existing medicines.\`);
+      }
+    } catch(e) { console.error("Seeding error:", e); }
+  })
   .catch(err => console.error("MongoDB Connection Error:", err));
+
+// Box Number Generator Helper
+const generateBoxNumber = async (medicineName) => {
+  if (!medicineName) return 'A1';
+  const firstLetter = medicineName.charAt(0).toUpperCase();
+  const letter = /^[A-Z]$/.test(firstLetter) ? firstLetter : 'A';
+  
+  const meds = await models.Medicine.find({ boxNumber: new RegExp(\`^\${letter}\`) });
+  let maxNum = 0;
+  for (const m of meds) {
+    if (m.boxNumber) {
+      const numPart = parseInt(m.boxNumber.substring(1));
+      if (!isNaN(numPart) && numPart > maxNum) {
+        maxNum = numPart;
+      }
+    }
+  }
+  return \`\${letter}\${maxNum + 1}\`;
+};
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
@@ -140,7 +208,8 @@ app.get('/api/stock', async (req, res) => {
         price: m?.price,
         discountedPrice: m?.discountedPrice,
         description: m?.description,
-        expiryDate: m?.expiryDate
+        expiryDate: m?.expiryDate,
+        boxNumber: m?.boxNumber
       };
     });
     res.json(rows);
@@ -222,9 +291,10 @@ app.get('/api/medicines/:id', async (req, res) => {
 // Admin Medicine Routes
 app.post('/api/medicines', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const med = new models.Medicine(req.body);
+    const boxNumber = await generateBoxNumber(req.body.name);
+    const med = new models.Medicine({ ...req.body, boxNumber });
     await med.save();
-    res.json({ id: med._id, ...req.body });
+    res.json({ id: med._id, ...req.body, boxNumber });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
@@ -244,13 +314,38 @@ app.patch('/api/medicines/:id', authenticateToken, isWarehouseOrAdmin, async (re
 // Unified Admin Inventory Route
 app.post('/api/admin/add-inventory', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
   try {
-    const { name, description, manufacturer, price, discountedPrice, expiryDate, category, image, quantity, location } = req.body;
+    const { medicineId, name, description, manufacturer, price, discountedPrice, expiryDate, category, image, quantity, location } = req.body;
     
-    const med = new models.Medicine({ name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock: true });
-    await med.save();
+    let med;
+    if (medicineId) {
+      med = await models.Medicine.findById(medicineId);
+    } else if (name) {
+      med = await models.Medicine.findOne({ name: { $regex: new RegExp('^' + name + '$', 'i') } });
+    }
     
-    const stock = new models.Stock({ medicineId: med._id, location, quantity: quantity || 0 });
-    await stock.save();
+    if (med) {
+      if (description) med.description = description;
+      if (manufacturer) med.manufacturer = manufacturer;
+      if (price !== undefined) med.price = price;
+      if (discountedPrice !== undefined) med.discountedPrice = discountedPrice;
+      if (expiryDate) med.expiryDate = expiryDate;
+      if (category) med.category = category;
+      if (image) med.image = image;
+      await med.save();
+    } else {
+      const boxNumber = await generateBoxNumber(name);
+      med = new models.Medicine({ name, description, manufacturer, price, discountedPrice, expiryDate, category, image, inStock: true, boxNumber });
+      await med.save();
+    }
+    
+    let stock = await models.Stock.findOne({ medicineId: med._id, location });
+    if (stock) {
+      stock.quantity += (quantity || 0);
+      await stock.save();
+    } else {
+      stock = new models.Stock({ medicineId: med._id, location, quantity: quantity || 0 });
+      await stock.save();
+    }
     
     res.json({ success: true, medicineId: med._id, stockId: stock._id, message: 'Inventory created successfully' });
   } catch(err) {
