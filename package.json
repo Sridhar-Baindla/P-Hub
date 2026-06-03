@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node Backend/server.js",
-    "dev": "concurrently \"vite Frontend --host\" \"node Backend/server.js\"",
+    "dev": "concurrently \"vite Frontend --host\" \"node --watch Backend/server.js\"",
     "server": "node Backend/server.js",
     "build": "vite build Frontend",
     "lint": "eslint Frontend",
