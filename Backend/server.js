@@ -458,6 +458,133 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// Warehouse Dashboard Stats
+app.get('/api/warehouse/dashboard-stats', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { range } = req.query;
+    const location = req.user.location;
+    
+    const now = new Date();
+    let startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    if (range === 'Yesterday') {
+      startDate.setDate(startDate.getDate() - 1);
+      endDate.setDate(endDate.getDate() - 1);
+    } else if (range === 'This Week') {
+      const day = startDate.getDay();
+      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+      startDate.setDate(diff);
+    } else if (range === 'This Month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const startIso = startDate.toISOString();
+    const endIso = endDate.toISOString();
+
+    const salesAggr = await models.Invoice.aggregate([
+      { $match: { location: location, createdAt: { $gte: startDate, $lte: endDate } } },
+      { $group: { _id: null, total: { $sum: "$netPayable" } } }
+    ]);
+    const totalSales = salesAggr.length > 0 ? salesAggr[0].total : 0;
+    
+    const prescriptionsCount = await models.Prescription.countDocuments({ 
+      uploadedAt: { $gte: startIso, $lte: endIso } 
+    });
+
+    const lowStockCount = await models.Stock.countDocuments({ location, quantity: { $lt: 10 } });
+    
+    const newPatients = await models.Customer.countDocuments({ 
+      createdAt: { $gte: startDate, $lte: endDate } 
+    });
+
+    const hourlyRevenueAggr = await models.Invoice.aggregate([
+      { $match: { location: location, createdAt: { $gte: startDate, $lte: endDate } } },
+      { 
+        $group: { 
+          _id: { $hour: "$createdAt" }, 
+          total: { $sum: "$netPayable" } 
+        } 
+      },
+      { $sort: { "_id": 1 } }
+    ]);
+    
+    const hourlyRevenue = Array(24).fill(0);
+    hourlyRevenueAggr.forEach(item => {
+      hourlyRevenue[item._id] = item.total;
+    });
+
+    const alerts = [];
+    if (lowStockCount > 0) {
+      alerts.push({ text: `${lowStockCount} products running low in stock`, type: "error" });
+    }
+    const pendingPo = await models.PurchaseOrder.countDocuments({ status: "Pending" });
+    if (pendingPo > 0) {
+      alerts.push({ text: `${pendingPo} pending purchase orders require review`, type: "warning" });
+    }
+    
+    if (alerts.length === 0) {
+      alerts.push({ text: "All systems operating normally.", type: "success" });
+    }
+
+    res.json({
+      totalSales,
+      prescriptionsCount,
+      lowStockCount,
+      newPatients,
+      hourlyRevenue,
+      alerts
+    });
+    
+  } catch(err) {
+    console.error("Dashboard Stats Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Warehouse Dashboard Export Report
+app.get('/api/warehouse/export-report', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { range } = req.query;
+    const location = req.user.location;
+    
+    const now = new Date();
+    let startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    if (range === 'Yesterday') {
+      startDate.setDate(startDate.getDate() - 1);
+      endDate.setDate(endDate.getDate() - 1);
+    } else if (range === 'This Week') {
+      const day = startDate.getDay();
+      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+      startDate.setDate(diff);
+    } else if (range === 'This Month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const invoices = await models.Invoice.find({ 
+      location: location, 
+      createdAt: { $gte: startDate, $lte: endDate } 
+    }).sort({ createdAt: -1 });
+
+    // Generate CSV
+    let csv = 'Invoice No,Date,Customer,Payment Mode,Subtotal,Discount,GST,Net Payable\n';
+    invoices.forEach(inv => {
+      const date = new Date(inv.createdAt).toLocaleString();
+      const customer = `"${inv.customerName || 'Walk-in'}"`; 
+      csv += `${inv.invoiceNo},"${date}",${customer},${inv.paymentMode},${inv.subtotal},${inv.totalDiscount},${inv.totalGst},${inv.netPayable}\n`;
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`Warehouse_Report_${range.replace(/\s+/g, '_')}.csv`);
+    return res.send(csv);
+  } catch(err) {
+    console.error("Export Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
     const { items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, transactionId: providedTxnId } = req.body;
@@ -481,6 +608,10 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 
     const order = new models.Order({ userId, items, totalAmount, shippingAddress, contactNumber, paymentMethod, paymentStatus, status, orderDate, transactionId });
     await order.save();
+    
+    // Trigger real-time dashboard update
+    try { io.emit('dashboard_update'); } catch(e) {}
+    
     res.json({ id: order._id, transactionId, status });
   } catch(err) {
     res.status(500).json({ error: err.message });
@@ -647,6 +778,193 @@ app.post('/api/auth/warehouse/login', async (req, res) => {
   }
 });
 
+// Phase 2: Supply Chain Routes
+app.get('/api/distributors', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const rows = await models.Distributor.find().sort({ createdAt: -1 });
+    res.json(rows.map(r => ({ ...r.toObject(), id: r._id })));
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/distributors', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const distributor = new models.Distributor(req.body);
+    await distributor.save();
+    res.json({ id: distributor._id, ...distributor.toObject() });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/distributors/:id/settle', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const distributor = await models.Distributor.findById(req.params.id);
+    if (distributor) {
+      distributor.outstanding = Math.max(0, distributor.outstanding - amount);
+      distributor.lastPayment = new Date().toISOString().split('T')[0];
+      await distributor.save();
+      res.json({ success: true, outstanding: distributor.outstanding });
+    } else {
+      res.status(404).json({ error: "Distributor not found" });
+    }
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/purchases', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const rows = await models.PurchaseOrder.find().sort({ createdAt: -1 });
+    res.json(rows.map(r => ({ ...r.toObject(), id: r._id })));
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/purchases', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { supplierName, items, totalAmount, invoiceFile } = req.body;
+    const poNumber = 'PO-' + Math.floor(100000 + Math.random() * 900000);
+    const po = new models.PurchaseOrder({ poNumber, supplierName, items, totalAmount, invoiceFile, status: 'Verified' });
+    await po.save();
+    
+    // Add to stock
+    if (items && Array.isArray(items)) {
+      for (const item of items) {
+        if (item.medicineId && item.qty) {
+          const stock = await models.Stock.findOne({ medicineId: item.medicineId, location: req.user.location });
+          if (stock) {
+            stock.quantity += item.qty;
+            await stock.save();
+          } else {
+            const newStock = new models.Stock({ medicineId: item.medicineId, location: req.user.location, quantity: item.qty });
+            await newStock.save();
+          }
+        }
+      }
+    }
+
+    // Update Distributor Payable
+    const distributor = await models.Distributor.findOne({ name: supplierName });
+    if (distributor) {
+      distributor.outstanding += totalAmount;
+      await distributor.save();
+    }
+
+    // Phase 3: Accounting - Log Purchase Expense
+    const journalEntry = new models.JournalEntry({
+      date: new Date().toISOString().split('T')[0],
+      ref: poNumber,
+      accountHead: 'Purchases (Stock)',
+      type: 'Debit',
+      amount: totalAmount,
+      category: 'Expense'
+    });
+    await journalEntry.save();
+
+    // Emit live events for real-time dashboard and inventory sync across POS and Customer views
+    try { 
+      io.emit('inventory_update'); 
+      io.emit('dashboard_update'); 
+    } catch(e) {}
+
+    res.json({ success: true, po: po._id });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POS Sales Checkout
+app.post('/api/sales/checkout', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { invoiceNo, customerName, customerPhone, items, subtotal, totalGst, totalDiscount, netPayable, paymentMode } = req.body;
+    
+    // Deduct stock
+    if (items && Array.isArray(items)) {
+      for (const item of items) {
+        if (item.medicineId && item.qty) {
+          const stock = await models.Stock.findOne({ medicineId: item.medicineId, location: req.user.location }).sort({ quantity: -1 });
+          if (stock) {
+            stock.quantity = Math.max(0, stock.quantity - item.qty);
+            await stock.save();
+          }
+        }
+      }
+    }
+
+    const invoice = new models.Invoice({
+      invoiceNo, customerName, customerPhone, items, subtotal, totalGst, totalDiscount, netPayable, paymentMode, location: req.user.location
+    });
+    await invoice.save();
+    
+    // Phase 3: CRM Update
+    if (customerPhone && customerPhone.trim() !== '') {
+      let customer = await models.Customer.findOne({ phone: customerPhone });
+      if (!customer) {
+        customer = new models.Customer({ phone: customerPhone, name: customerName, totalVisits: 1, totalSpent: netPayable, loyaltyPoints: Math.floor(netPayable * 0.05), lastVisit: new Date().toISOString().split('T')[0] });
+      } else {
+        customer.totalVisits += 1;
+        customer.totalSpent += netPayable;
+        customer.loyaltyPoints += Math.floor(netPayable * 0.05);
+        customer.lastVisit = new Date().toISOString().split('T')[0];
+        if (customerName && customerName !== 'Guest Customer') customer.name = customerName;
+      }
+      await customer.save();
+    }
+
+    // Phase 3: Accounting - Log Sales Income
+    const head = paymentMode === 'Cash' ? 'Cash Sales (POS)' : (paymentMode === 'Credit' ? 'Credit Sales' : 'UPI/Card Sales');
+    const journalEntry = new models.JournalEntry({
+      date: new Date().toISOString().split('T')[0],
+      ref: invoiceNo,
+      accountHead: head,
+      type: 'Credit',
+      amount: netPayable,
+      category: 'Income'
+    });
+    await journalEntry.save();
+
+    // Trigger real-time dashboard update
+    try { io.emit('dashboard_update'); } catch(e) {}
+
+    res.json({ success: true, invoice: invoice._id });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Phase 3: CRM and Accounting Routes
+app.get('/api/customers', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const rows = await models.Customer.find().sort({ lastVisit: -1 });
+    res.json(rows.map(r => ({ ...r.toObject(), id: r._id })));
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/journal', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const rows = await models.JournalEntry.find().sort({ createdAt: -1 });
+    res.json(rows.map(r => ({ ...r.toObject(), id: r._id })));
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/journal', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const entry = new models.JournalEntry(req.body);
+    await entry.save();
+    res.json({ id: entry._id, ...entry.toObject() });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Payment Verification Simulation
 app.post('/api/payments/verify', authenticateToken, (req, res) => {
   const { amount, method } = req.body;
@@ -659,6 +977,65 @@ app.post('/api/payments/verify', authenticateToken, (req, res) => {
       res.status(402).json({ success: false, error: 'Payment declined by gateway.' });
     }
   }, 2000);
+});
+
+// Generalized Warehouse Data Routes for dynamic modules
+app.get('/api/warehouse-data/:moduleName', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { moduleName } = req.params;
+    const { location } = req.query; // optional filtering by location
+    
+    let query = { moduleName };
+    if (location) query.location = location;
+    
+    const rows = await models.WarehouseData.find(query).sort({ createdAt: -1 });
+    res.json(rows.map(r => ({ ...r.toObject(), id: r._id })));
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/warehouse-data/:moduleName', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { moduleName } = req.params;
+    const { data, location } = req.body;
+    
+    const newRecord = new models.WarehouseData({
+      moduleName,
+      data,
+      location: location || req.user.location
+    });
+    
+    await newRecord.save();
+    res.json({ id: newRecord._id, ...newRecord.toObject() });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/warehouse-data/:moduleName/:id', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const { data } = req.body;
+    const updated = await models.WarehouseData.findByIdAndUpdate(
+      req.params.id, 
+      { data, updatedAt: Date.now() }, 
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ error: "Record not found" });
+    res.json({ id: updated._id, ...updated.toObject() });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/warehouse-data/:moduleName/:id', authenticateToken, isWarehouseOrAdmin, async (req, res) => {
+  try {
+    const deleted = await models.WarehouseData.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Record not found" });
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Session Management

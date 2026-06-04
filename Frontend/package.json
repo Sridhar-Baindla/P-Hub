@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node Backend/server.js",
-    "dev": "concurrently \"vite Frontend --host\" \"node Backend/server.js\"",
-    "server": "node Backend/server.js",
-    "build": "vite build Frontend",
-    "lint": "eslint Frontend",
-    "preview": "vite preview Frontend"
+    "dev": "concurrently \"vite --host\" \"node ../Backend/server.js\"",
+    "server": "node ../Backend/server.js",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

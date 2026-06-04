@@ -1,13 +1,38 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Package, MapPin, LogOut, Check, Plus, X, Edit2, UploadCloud, Search, User } from 'lucide-react';
+import { Package, MapPin, LogOut, User, X } from 'lucide-react';
 import './Warehouse.css';
 import { API_URL } from '../config';
 import { AppContext } from '../context/AppContext';
 
+// Import Layout Components
+import Sidebar from '../components/warehouse/Sidebar';
+
+// Import Feature Modules
+import DashboardOverview from '../components/warehouse/DashboardOverview';
+import SalesManagement from '../components/warehouse/SalesManagement';
+import PurchaseManagement from '../components/warehouse/PurchaseManagement';
+import InventoryManagement from '../components/warehouse/InventoryManagement';
+import ProductCatalogue from '../components/warehouse/ProductCatalogue';
+import CRM from '../components/warehouse/CRM';
+import DistributorManagement from '../components/warehouse/DistributorManagement';
+import FinancialAccounting from '../components/warehouse/FinancialAccounting';
+import ReportsMIS from '../components/warehouse/ReportsMIS';
+import QRBarcode from '../components/warehouse/QRBarcode';
+import MultiStore from '../components/warehouse/MultiStore';
+import Logistics from '../components/warehouse/Logistics';
+import Marketplace from '../components/warehouse/Marketplace';
+import MobileAppSync from '../components/warehouse/MobileAppSync';
+import Integrations from '../components/warehouse/Integrations';
+import SecurityAdmin from '../components/warehouse/SecurityAdmin';
+import ClinicFeatures from '../components/warehouse/ClinicFeatures';
+import SahaAI from '../components/warehouse/SahaAI';
+
 const Warehouse = () => {
   const { user: warehouseAdmin, logout: handleLogout, showProfile, setShowProfile, token } = useContext(AppContext);
-  const [activeTab, setActiveTab] = useState('inventory'); // inventory, orders
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Shared State (mainly used by Inventory and Logistics modules initially)
   const [orders, setOrders] = useState([]);
   const [otpInputs] = useState({});
   const [stock, setStock] = useState([]);
@@ -22,6 +47,7 @@ const Warehouse = () => {
     discountedPrice: '', expiryDate: '', category: 'General', quantity: 0, image: ''
   });
   const [showExistingMeds, setShowExistingMeds] = useState(false);
+  const [updatingItems, setUpdatingItems] = useState({});
 
   const fetchMedicines = useCallback(async () => {
     try {
@@ -57,13 +83,13 @@ const Warehouse = () => {
 
   useEffect(() => {
     if (warehouseAdmin && warehouseAdmin.role === 'warehouse_manager') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMedicines();
       fetchStock(warehouseAdmin.location);
       fetchOrders();
     }
   }, [warehouseAdmin, fetchMedicines, fetchStock, fetchOrders]);
 
+  // Logistics Handlers
   const approveOrder = async (orderId) => {
     try {
       const res = await fetch(`${API_URL}/orders/${orderId}/approve`, {
@@ -125,10 +151,7 @@ const Warehouse = () => {
     }
   };
 
-
-
-  const [updatingItems, setUpdatingItems] = useState({});
-
+  // Inventory Handlers
   const handleUpdateStock = async (stockId, newQuantity) => {
     setUpdatingItems(prev => ({ ...prev, [stockId]: true }));
     try {
@@ -159,71 +182,39 @@ const Warehouse = () => {
     setLoading(true);
     try {
       if (editingStock) {
-        // 1. Update medicine details
         const medRes = await fetch(`${API_URL}/medicines/${editingStock.medicineId}`, {
           method: 'PATCH',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
-            name: newStock.name,
-            description: newStock.description,
-            manufacturer: newStock.manufacturer,
-            price: parseFloat(newStock.price) || 0,
-            discountedPrice: newStock.discountedPrice ? parseFloat(newStock.discountedPrice) : null,
-            expiryDate: newStock.expiryDate,
-            category: newStock.category,
-            ...(newStock.image && { image: newStock.image })
+            name: newStock.name, description: newStock.description, manufacturer: newStock.manufacturer,
+            price: parseFloat(newStock.price) || 0, discountedPrice: newStock.discountedPrice ? parseFloat(newStock.discountedPrice) : null,
+            expiryDate: newStock.expiryDate, category: newStock.category, ...(newStock.image && { image: newStock.image })
           })
         });
-
         if (!medRes.ok) throw new Error('Failed to update medicine details');
 
-        // 2. Update stock quantity
         const stockRes = await fetch(`${API_URL}/stock/${editingStock.id}`, {
           method: 'PATCH',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            quantity: parseInt(newStock.quantity) || 0
-          })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ quantity: parseInt(newStock.quantity) || 0 })
         });
-
         if (!stockRes.ok) throw new Error('Failed to update stock quantity');
-        
         setUpdateMsg('Item details and stock updated!');
       } else {
-        // Unified creation flow
         const response = await fetch(`${API_URL}/admin/add-inventory`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
-            ...newStock,
-            price: parseFloat(newStock.price) || 0,
+            ...newStock, price: parseFloat(newStock.price) || 0,
             discountedPrice: newStock.discountedPrice ? parseFloat(newStock.discountedPrice) : null,
-            quantity: parseInt(newStock.quantity) || 0,
-            location: warehouseAdmin.location
+            quantity: parseInt(newStock.quantity) || 0, location: warehouseAdmin.location
           })
         });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to add inventory');
-        }
-        
+        if (!response.ok) throw new Error((await response.json()).error || 'Failed to add inventory');
         setUpdateMsg('New medicine and stock added successfully!');
       }
-
-      // Refresh data
       await fetchMedicines();
       await fetchStock(warehouseAdmin.location);
-      
       setShowAddModal(false);
       setEditingStock(null);
       setNewStock({ name: '', description: '', manufacturer: '', price: '', discountedPrice: '', expiryDate: '', category: 'General', quantity: 0, image: '' });
@@ -239,31 +230,18 @@ const Warehouse = () => {
   const handleOpenEdit = (item, medicine) => {
     setEditingStock(item);
     setNewStock({
-      name: medicine.name,
-      description: medicine.description || '',
-      manufacturer: medicine.manufacturer || '',
-      price: medicine.price || 0,
-      discountedPrice: medicine.discountedPrice || '',
-      expiryDate: medicine.expiryDate || '',
-      category: medicine.category || 'General',
-      quantity: item.quantity || 0,
-      image: medicine.image || ''
+      name: medicine.name, description: medicine.description || '', manufacturer: medicine.manufacturer || '',
+      price: medicine.price || 0, discountedPrice: medicine.discountedPrice || '', expiryDate: medicine.expiryDate || '',
+      category: medicine.category || 'General', quantity: item.quantity || 0, image: medicine.image || ''
     });
     setShowAddModal(true);
   };
 
   const handleSelectExisting = (med) => {
     setNewStock({
-      ...newStock,
-      medicineId: med.id || med._id,
-      name: med.name,
-      description: med.description || '',
-      manufacturer: med.manufacturer || '',
-      price: med.price || 0,
-      discountedPrice: med.discountedPrice || '',
-      expiryDate: med.expiryDate || '',
-      category: med.category || 'General',
-      image: med.image || ''
+      ...newStock, medicineId: med.id || med._id, name: med.name, description: med.description || '',
+      manufacturer: med.manufacturer || '', price: med.price || 0, discountedPrice: med.discountedPrice || '',
+      expiryDate: med.expiryDate || '', category: med.category || 'General', image: med.image || ''
     });
     setShowExistingMeds(false);
   };
@@ -271,9 +249,7 @@ const Warehouse = () => {
   const handleImageUpload = (file) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewStock({ ...newStock, image: reader.result });
-    };
+    reader.onloadend = () => setNewStock({ ...newStock, image: reader.result });
     reader.readAsDataURL(file);
   };
 
@@ -281,8 +257,7 @@ const Warehouse = () => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
-        const blob = items[i].getAsFile();
-        handleImageUpload(blob);
+        handleImageUpload(items[i].getAsFile());
       }
     }
   };
@@ -302,23 +277,54 @@ const Warehouse = () => {
            (item.quantity || 0).toString().includes(q);
   });
 
+  const renderActiveModule = () => {
+    switch (activeTab) {
+      case 'dashboard': return <DashboardOverview />;
+      case 'sales': return <SalesManagement />;
+      case 'purchase': return <PurchaseManagement />;
+      case 'inventory': 
+        return <InventoryManagement 
+          warehouseAdmin={warehouseAdmin} stock={stock} setStock={setStock} medicines={medicines}
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} updateMsg={updateMsg} setUpdateMsg={setUpdateMsg}
+          loading={loading} showAddModal={showAddModal} setShowAddModal={setShowAddModal}
+          editingStock={editingStock} setEditingStock={setEditingStock} newStock={newStock} setNewStock={setNewStock}
+          showExistingMeds={showExistingMeds} setShowExistingMeds={setShowExistingMeds} updatingItems={updatingItems}
+          handleUpdateStock={handleUpdateStock} handleAddStock={handleAddStock} handleOpenEdit={handleOpenEdit}
+          handleSelectExisting={handleSelectExisting} handleImageUpload={handleImageUpload} handlePaste={handlePaste}
+          filteredStock={filteredStock} token={token}
+        />;
+      case 'catalogue': return <ProductCatalogue />;
+      case 'crm': return <CRM />;
+      case 'distributor': return <DistributorManagement />;
+      case 'finance': return <FinancialAccounting />;
+      case 'reports': return <ReportsMIS />;
+      case 'qr_barcode': return <QRBarcode />;
+      case 'multistore': return <MultiStore />;
+      case 'logistics': 
+        return <Logistics 
+          orders={orders} updateMsg={updateMsg} approveOrder={approveOrder} 
+          verifyOTP={verifyOTP} updateDeliveryStatus={updateDeliveryStatus} 
+        />;
+      case 'marketplace': return <Marketplace />;
+      case 'mobile': return <MobileAppSync />;
+      case 'integrations': return <Integrations />;
+      case 'security': return <SecurityAdmin />;
+      case 'clinic': return <ClinicFeatures />;
+      case 'ai': return <SahaAI />;
+      default: return <DashboardOverview />;
+    }
+  };
+
   return (
-    <div className="warehouse-dashboard">
-      <header className="warehouse-header">
-        <div className="container header-flex">
+    <div className="warehouse-dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <header className="warehouse-header" style={{ flexShrink: 0, zIndex: 10 }}>
+        <div className="container header-flex" style={{ maxWidth: '100%', padding: '0 2rem' }}>
           <div className="store-info">
             <Package size={24} color="var(--primary)" />
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem' }} onClick={() => setShowProfile(true)}>
               <div className="manager-avatar" style={{ 
-                width: '32px', 
-                height: '32px', 
-                background: 'var(--primary-light)', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                color: 'var(--primary)',
-                fontWeight: 600
+                width: '32px', height: '32px', background: 'var(--primary-light)', borderRadius: '50%', 
+                display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--primary)', fontWeight: 600
               }}>
                 {warehouseAdmin.name.charAt(0)}
               </div>
@@ -327,10 +333,6 @@ const Warehouse = () => {
                 <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--text-secondary)' }}>Active Manager: {warehouseAdmin.name}</p>
               </div>
             </div>
-          </div>
-          <div className="header-nav">
-             <button className={`nav-link ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Inventory</button>
-             <button className={`nav-link ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Fulfillment</button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button onClick={() => setShowProfile(true)} className="nav-link profile-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500 }}>
@@ -343,402 +345,13 @@ const Warehouse = () => {
         </div>
       </header>
 
-      <main className="container warehouse-main">
-        {activeTab === 'inventory' ? (
-          <>
-            <div className="dashboard-controls">
-              <div>
-                <h1>Inventory Management</h1>
-                <p>Update real-time stock levels for {warehouseAdmin.location} location.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
-                <div className="warehouse-search-bar" style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  background: 'var(--surface)', 
-                  border: '1px solid var(--border)', 
-                  borderRadius: 'var(--radius-lg)', 
-                  padding: '0.6rem 1.25rem', 
-                  gap: '0.75rem', 
-                  width: '100%',
-                  boxShadow: 'var(--shadow-sm)'
-                }}>
-                  <Search size={18} color="var(--text-secondary)" />
-                  <input 
-                    type="text" 
-                    placeholder="Search name, formula, company, stock..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ 
-                      border: 'none', 
-                      background: 'none', 
-                      outline: 'none', 
-                      width: '100%',
-                      fontSize: '0.95rem'
-                    }}
-                  />
-                </div>
-                {updateMsg && <div className="success-badge"><Check size={16} /> {updateMsg}</div>}
-                <button onClick={() => { setEditingStock(null); setShowAddModal(true); }} className="btn btn-primary add-stock-btn" style={{ whiteSpace: 'nowrap' }}>
-                  <Plus size={18} /> Add Stock
-                </button>
-              </div>
-            </div>
-
-            <div className="stock-grid">
-              {filteredStock.map(item => (
-                <div key={item.id} className="stock-card">
-                  <div className="stock-img-container">
-                    <img src={item.image} alt={item.name} />
-                    {item.quantity < 20 && (
-                      <span className="low-stock-pill">Low Stock</span>
-                    )}
-                  </div>
-                  <div className="stock-info">
-                    <div className="stock-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <h3 style={{ margin: 0 }}>{item.name}</h3>
-                        {item.boxNumber && (
-                          <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid var(--primary)', display: 'inline-block' }}>
-                            Box {item.boxNumber}
-                          </span>
-                        )}
-                      </div>
-                      <button className="edit-stock-btn" onClick={() => handleOpenEdit(item, item)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
-                        <Edit2 size={18} />
-                      </button>
-                    </div>
-                    <p className="category">{item.category || 'General'} • {item.manufacturer || 'Unknown'}</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0.5rem 0' }}>
-                      <p className="price-info" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {item.discountedPrice ? (
-                          <>
-                            <span style={{ color: 'var(--primary)' }}>₹{item.discountedPrice}</span>
-                            <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.85rem', marginLeft: '0.5rem' }}>₹{item.price}</span>
-                          </>
-                        ) : (
-                          <span>₹{item.price}</span>
-                        )}
-                      </p>
-                      {item.expiryDate && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                          Exp: {new Date(item.expiryDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        </span>
-                      )}
-                    </div>
-                      
-                      <div className="quantity-manager">
-                        <label>Available Stock (Units)</label>
-                        <div className={`input-with-button ${updatingItems[item.id] ? 'loading' : ''}`} style={{ position: 'relative' }}>
-                          <input 
-                            type="number" 
-                            value={item.quantity} 
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              setStock(stock.map(s => s.id === item.id ? { ...s, quantity: val } : s));
-                            }}
-                            onBlur={(e) => handleUpdateStock(item.id, e.target.value)}
-                            min="0"
-                            disabled={updatingItems[item.id]}
-                            style={{ opacity: updatingItems[item.id] ? 0.5 : 1 }}
-                          />
-                          <div className="unit-label">Units</div>
-                          {updatingItems[item.id] && (
-                            <span style={{ position: 'absolute', right: '10px', top: '-20px', fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600 }}>Saving...</span>
-                          )}
-                        </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="dashboard-controls">
-              <div>
-                <h1>Order Fulfillment</h1>
-                <p>Review, approve, and verify delivery for customer orders.</p>
-              </div>
-              {updateMsg && <div className="success-badge"><Check size={16} /> {updateMsg}</div>}
-            </div>
-
-            <div className="data-table-container" style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-              <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                <thead style={{ background: 'var(--background)' }}>
-                  <tr>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Order ID</th>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Customer Info</th>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Items</th>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Amount</th>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Approval Status</th>
-                    <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.filter(o => o.status === 'Confirmed').map(order => (
-                    <tr key={order.id} style={{ borderTop: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem' }}>#{order.id}</td>
-                      <td style={{ padding: '1rem' }}>
-                         <div style={{ fontWeight: 600 }}>{order.contactNumber}</div>
-                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{order.shippingAddress}</div>
-                      </td>
-                      <td style={{ padding: '1rem' }}>{(order.items || []).length} items</td>
-                      <td style={{ padding: '1rem', fontWeight: 600 }}>₹{order.totalAmount}</td>
-                      <td style={{ padding: '1rem' }}>
-                         <span className={`badge badge-${order.deliveryStatus === 'Approved' ? 'success' : order.deliveryStatus === 'Delivered' ? 'primary' : 'warning'}`}>
-                           {order.deliveryStatus || 'Pending Review'}
-                         </span>
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        {!order.deliveryStatus || order.deliveryStatus === 'Pending Review' ? (
-                          <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => approveOrder(order.id)}>
-                            Approve Order
-                          </button>
-                        ) : order.deliveryStatus === 'Approved' ? (
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: '#3b82f6', color: 'white' }} onClick={() => updateDeliveryStatus(order.id, 'Shipped')}>
-                              Mark Shipped
-                            </button>
-                          </div>
-                        ) : order.deliveryStatus === 'Shipped' ? (
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: '#f59e0b', color: 'white' }} onClick={() => updateDeliveryStatus(order.id, 'Out for Delivery')}>
-                              Out for Delivery
-                            </button>
-                          </div>
-                        ) : order.deliveryStatus === 'Out for Delivery' ? (
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button className="btn btn-success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => verifyOTP(order.id, true)}>
-                              Complete Handover
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--success)', fontWeight: 600 }}>Order Handover Complete</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        {filteredStock.length === 0 && !loading && (
-          <div className="empty-state" style={{ textAlign: 'center', padding: '4rem 0' }}>
-            {searchQuery ? (
-              <>
-                <Search size={60} color="var(--text-secondary)" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
-                <h2>No matching results</h2>
-                <p>We couldn't find any medicine matching "{searchQuery}"</p>
-                <button onClick={() => setSearchQuery('')} className="btn" style={{ marginTop: '1.5rem', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)' }}>Clear Search</button>
-              </>
-            ) : (
-              <>
-                <Package size={60} color="var(--text-secondary)" style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
-                <h2>No items in stock</h2>
-                <p>This warehouse doesn't have any items registered yet.</p>
-              </>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Add Stock Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content warehouse-modal">
-            <button className="modal-close" onClick={() => { setShowAddModal(false); setEditingStock(null); }}>
-              <X size={24} />
-            </button>
-            <h2>{editingStock ? 'Edit Stock Item' : 'Register New Stock'}</h2>
-            <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>
-              {editingStock ? 'Update the medicine details and current inventory level.' : 'Enter the medicine details to add it to your inventory.'}
-            </p>
-            
-            <form onSubmit={handleAddStock} className="add-stock-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Drug Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Paracetamol" 
-                    value={newStock.name}
-                    onChange={(e) => {
-                      setNewStock({...newStock, name: e.target.value});
-                      if (!editingStock) setShowExistingMeds(e.target.value.length > 0);
-                    }}
-                    required 
-                    autoComplete="off"
-                  />
-                  {showExistingMeds && !editingStock && (
-                    <div className="autocomplete-dropdown" style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      width: '100%',
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-md)',
-                      boxShadow: 'var(--shadow-lg)',
-                      zIndex: 100,
-                      maxHeight: '200px',
-                      overflowY: 'auto'
-                    }}>
-                      {medicines
-                        .filter(m => m.name.toLowerCase().includes(newStock.name.toLowerCase()))
-                        .map(m => (
-                          <div 
-                            key={m.id} 
-                            className="autocomplete-item"
-                            onClick={() => handleSelectExisting(m)}
-                          >
-                            <span className="med-name">{m.name}</span>
-                            <span className="med-meta">{m.manufacturer} • {m.category}</span>
-                          </div>
-                        ))}
-                      <div 
-                        className="autocomplete-item"
-                        style={{ color: 'var(--primary)', fontStyle: 'italic' }}
-                        onClick={() => setShowExistingMeds(false)}
-                      >
-                        + Create as new medicine
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label>Formula Name / Description</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 500mg Composition" 
-                    value={newStock.description}
-                    onChange={(e) => setNewStock({...newStock, description: e.target.value})}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Manufacturer / Company Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. GSK Pharmaceuticals" 
-                  value={newStock.manufacturer}
-                  onChange={(e) => setNewStock({...newStock, manufacturer: e.target.value})}
-                  required 
-                />
-              </div>
-
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Selling Price (₹)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00" 
-                    value={newStock.price}
-                    onChange={(e) => setNewStock({...newStock, price: e.target.value})}
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Discounted Price (₹)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00" 
-                    value={newStock.discountedPrice}
-                    onChange={(e) => setNewStock({...newStock, discountedPrice: e.target.value})}
-                  />
-                </div>
-              </div>
-
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Product Image (Click to Upload or Paste Image)</label>
-                  <div 
-                    className="image-upload-zone"
-                    onPaste={handlePaste}
-                    onClick={() => document.getElementById('file-upload').click()}
-                    tabIndex="0"
-                    style={{ 
-                      border: '2px dashed var(--border)', 
-                      borderRadius: 'var(--radius-md)', 
-                      padding: '2rem', 
-                      textAlign: 'center', 
-                      cursor: 'pointer',
-                      background: newStock.image ? 'none' : 'var(--surface-hover)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      minHeight: '150px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {newStock.image ? (
-                      <img src={newStock.image} alt="Preview" style={{ maxWidth: '100%', maxHeight: '140px', objectFit: 'contain' }} />
-                    ) : (
-                      <>
-                        <UploadCloud size={40} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Click to upload or press <b>Ctrl+V</b> to paste</p>
-                      </>
-                    )}
-                    <input 
-                      id="file-upload"
-                      type="file" 
-                      hidden 
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e.target.files[0])}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Category</label>
-                  <select 
-                    value={newStock.category}
-                    onChange={(e) => setNewStock({...newStock, category: e.target.value})}
-                  >
-                    <option>General</option>
-                    <option>Pain Relief</option>
-                    <option>Antibiotics</option>
-                    <option>Supplements</option>
-                    <option>Cardiac</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Expiry Date (Month/Year)</label>
-                  <input 
-                    type="month" 
-                    value={newStock.expiryDate}
-                    onChange={(e) => setNewStock({...newStock, expiryDate: e.target.value})}
-                    required 
-                  />
-                </div>
-
-              <div className="form-group">
-                <label>Initial Stock Quantity</label>
-                <input 
-                  type="number" 
-                  placeholder="0" 
-                  value={newStock.quantity}
-                  onChange={(e) => setNewStock({...newStock, quantity: e.target.value})}
-                  required 
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', marginTop: '1rem' }} disabled={loading}>
-                {loading ? 'Processing...' : (editingStock ? 'Update Inventory' : 'Add to Inventory')}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="warehouse-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        
+        <main className="warehouse-main-content" style={{ flex: 1, overflowY: 'auto', padding: '2rem', background: 'var(--background)' }}>
+          {renderActiveModule()}
+        </main>
+      </div>
 
       {/* Profile Modal */}
       {showProfile && (
@@ -748,17 +361,9 @@ const Warehouse = () => {
               <X size={24} />
             </button>
             <div style={{ 
-              width: '80px', 
-              height: '80px', 
-              background: 'var(--primary-light)', 
-              borderRadius: '50%', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              color: 'var(--primary)',
-              fontSize: '2rem',
-              fontWeight: 700,
-              margin: '0 auto 1.5rem'
+              width: '80px', height: '80px', background: 'var(--primary-light)', borderRadius: '50%', 
+              display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--primary)', 
+              fontSize: '2rem', fontWeight: 700, margin: '0 auto 1.5rem'
             }}>
               {warehouseAdmin.name.charAt(0)}
             </div>
