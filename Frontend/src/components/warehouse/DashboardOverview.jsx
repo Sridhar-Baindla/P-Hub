@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { LayoutDashboard, TrendingUp, Package, Users, AlertCircle, FileText } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
-import { API_URL } from '../../config';
+import { API_URL, SOCKET_URL } from '../../config';
 import { io } from 'socket.io-client';
 
 const DashboardOverview = () => {
@@ -40,8 +40,7 @@ const DashboardOverview = () => {
     }
 
     // Connect to WebSocket for real-time updates
-    const socketBaseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
-    const socket = io(socketBaseUrl);
+    const socket = io(SOCKET_URL);
     
     socket.on('dashboard_update', () => {
       console.log('Real-time dashboard update triggered');

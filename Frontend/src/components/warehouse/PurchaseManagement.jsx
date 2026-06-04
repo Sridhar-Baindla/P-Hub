@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, Search, Plus, Filter, CheckCircle, Clock, FileText, Upload, X } from 'lucide-react';
-import { API_URL } from '../../config';
+import { API_URL, SOCKET_URL } from '../../config';
 import { io } from 'socket.io-client';
 
 const PurchaseManagement = () => {
@@ -29,8 +29,7 @@ const PurchaseManagement = () => {
     fetchDropdowns();
 
     // Socket listener for real-time updates
-    const socketBaseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
-    const socket = io(socketBaseUrl);
+    const socket = io(SOCKET_URL);
     socket.on('inventory_update', () => {
       fetchPurchases(); // refresh list if someone else adds a PO
     });

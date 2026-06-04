@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, CreditCard, CheckCircle, ArrowLeft, History, Search, ShieldCheck } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
-import { API_URL } from '../config';
+import { API_URL, SOCKET_URL } from '../config';
 import './Checkout.css';
 import { QRCodeSVG } from 'qrcode.react';
 import { io } from 'socket.io-client';
@@ -133,8 +133,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (showPhonePeOverlay && txnId) {
-      const socketUrl = API_URL || window.location.origin;
-      const socket = io(socketUrl);
+      const socket = io(SOCKET_URL);
       socketRef.current = socket;
 
       socket.emit('join_payment_room', txnId);

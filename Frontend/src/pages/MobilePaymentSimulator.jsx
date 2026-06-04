@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ShieldCheck, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
-import { API_URL } from '../config';
+import { API_URL, SOCKET_URL } from '../config';
 import './MobilePaymentSimulator.css'; // We'll create some basic styles for mobile view
 
 const MobilePaymentSimulator = () => {
@@ -16,9 +16,8 @@ const MobilePaymentSimulator = () => {
   const handleApprove = () => {
     setStatus('processing');
     
-    // Connect to WebSocket
-    const socketUrl = API_URL || window.location.origin;
-    const socket = io(socketUrl);
+    // Connect to WebSocket using the root origin of API_URL
+    const socket = io(SOCKET_URL);
 
     // Emit the simulated webhook directly to the socket server
     fetch(`${API_URL || window.location.origin}/payments/simulate-webhook`, {
