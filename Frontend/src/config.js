@@ -5,11 +5,12 @@ const getApiUrl = () => {
   }
   
   // Fix for "Failed to fetch" on other devices (mobile testing)
-  // If the API URL contains localhost or 127.0.0.1, but we are accessing the app from a network IP (e.g., 192.168.x.x),
-  // replace localhost with the actual network IP so the phone knows where to reach the backend.
+  // If the API URL contains localhost or 127.0.0.1, it means we are in local development.
+  // Instead of hardcoding the IP and port (which might be blocked by Windows Firewall),
+  // we reset the URL to a relative path ('') so that the fetch goes through the current origin.
+  // This allows the Vite proxy (port 5173) or the production Node server (port 5000) to handle it natively.
   if (typeof window !== 'undefined' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
-    const currentHost = window.location.hostname;
-    url = url.replace(/localhost|127\.0\.0\.1/, currentHost);
+    url = '';
   }
 
   // Remove any trailing slashes
