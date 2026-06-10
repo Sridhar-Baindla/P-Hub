@@ -5,23 +5,11 @@ const getApiUrl = () => {
     url = import.meta.env.VITE_API_URL;
   }
   
-  // Intelligent resolution for cross-device authentication
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    if (url && (url.includes('localhost') || url.includes('127.0.0.1')) && !isLocalhost) {
-      // If environment URL is localhost but we are on a remote device (e.g. mobile phone),
-      // we must use the actual IP address to connect to the backend.
-      url = `http://${window.location.hostname}:5000`;
-    } else if (!url) {
-      // If no environment URL is set:
-      if (window.location.port === '5173' || window.location.port === '5174') {
-        // We are using Vite dev server. Point directly to the Node backend on port 5000.
-        url = `http://${window.location.hostname}:5000`;
-      } else {
-        // Production: Use the current origin
-        url = window.location.origin;
-      }
+    if (!url) {
+      // Use the current origin. During development, Vite proxies /api to the backend.
+      // In production, the backend is on the same origin or handled by a reverse proxy.
+      url = window.location.origin;
     }
   }
 
