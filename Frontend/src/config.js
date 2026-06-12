@@ -6,9 +6,10 @@ const getApiUrl = () => {
   }
   
   if (typeof window !== 'undefined') {
-    if (!url) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // If no URL is set, OR if the URL is hardcoded to localhost but we are accessing from an external IP (e.g. mobile device)
+    if (!url || (url.includes('localhost') && !isLocalhost) || (url.includes('127.0.0.1') && !isLocalhost)) {
       // Use the current origin. During development, Vite proxies /api to the backend.
-      // In production, the backend is on the same origin or handled by a reverse proxy.
       url = window.location.origin;
     }
   }
