@@ -40,13 +40,6 @@ app.use((req, res, next) => {
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
-let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-if (!mongoUri) {
-  const mongoServer = await MongoMemoryServer.create();
-  mongoUri = mongoServer.getUri();
-  console.log("No MONGO_URI provided. Started in-memory MongoDB at " + mongoUri);
-}
-
 // Box Number Generator Helper
 const generateBoxNumber = async (medicineName) => {
   if (!medicineName) return 'A1';
@@ -66,49 +59,60 @@ const generateBoxNumber = async (medicineName) => {
   return `${letter}${maxNum + 1}`;
 };
 
-try {
-  await mongoose.connect(mongoUri, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 10000,
-    maxPoolSize: 50,
-    family: 4 // Use IPv4, skip trying IPv6 which causes timeouts on some networks
-  });
-  console.log("MongoDB Connected");
-  
+const connectDB = async () => {
   try {
-    const count = await models.User.countDocuments();
-    if (count === 0 && fs.existsSync(path.resolve(__dirname, '../Database/db.json'))) {
-      const dbData = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../Database/db.json'), 'utf8'));
-      if (dbData.users) {
-        for (const u of dbData.users) {
-          const hashedPassword = await bcrypt.hash(u.password, 10);
-          await models.User.create({ name: u.name, email: u.email, password: hashedPassword, role: u.role || 'user' });
-        }
-      }
-      if (dbData.warehouseAdmins) {
-        for (const admin of dbData.warehouseAdmins) {
-          const hashedPassword = await bcrypt.hash(admin.password, 10);
-          await models.WarehouseAdmin.create({ name: admin.name, email: admin.email, password: hashedPassword, location: admin.location });
-        }
-      }
-      console.log("Seeded database from db.json");
+    let mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    if (!mongoUri) {
+      const mongoServer = await MongoMemoryServer.create();
+      mongoUri = mongoServer.getUri();
+      console.log("No MONGO_URI provided. Started in-memory MongoDB at " + mongoUri);
     }
+
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 50,
+      family: 4 // Use IPv4, skip trying IPv6 which causes timeouts on some networks
+    });
+    console.log("MongoDB Connected");
     
-    // Auto-backfill box numbers for existing medicines that lack one
-    const unboxedMedicines = await models.Medicine.find({ $or: [{ boxNumber: { $exists: false } }, { boxNumber: null }] });
-    if (unboxedMedicines.length > 0) {
-      for (const med of unboxedMedicines) {
-        med.boxNumber = await generateBoxNumber(med.name);
-        await med.save();
+    try {
+      const count = await models.User.countDocuments();
+      if (count === 0 && fs.existsSync(path.resolve(__dirname, '../Database/db.json'))) {
+        const dbData = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../Database/db.json'), 'utf8'));
+        if (dbData.users) {
+          for (const u of dbData.users) {
+            const hashedPassword = await bcrypt.hash(u.password, 10);
+            await models.User.create({ name: u.name, email: u.email, password: hashedPassword, role: u.role || 'user' });
+          }
+        }
+        if (dbData.warehouseAdmins) {
+          for (const admin of dbData.warehouseAdmins) {
+            const hashedPassword = await bcrypt.hash(admin.password, 10);
+            await models.WarehouseAdmin.create({ name: admin.name, email: admin.email, password: hashedPassword, location: admin.location });
+          }
+        }
+        console.log("Seeded database from db.json");
       }
-      console.log(`Backfilled box numbers for ${unboxedMedicines.length} existing medicines.`);
-    }
-  } catch(e) { console.error("Seeding error:", e); }
-} catch (err) {
-  console.error("MongoDB Connection Error:", err);
-  process.exit(1);
-}
+      
+      // Auto-backfill box numbers for existing medicines that lack one
+      const unboxedMedicines = await models.Medicine.find({ $or: [{ boxNumber: { $exists: false } }, { boxNumber: null }] });
+      if (unboxedMedicines.length > 0) {
+        for (const med of unboxedMedicines) {
+          med.boxNumber = await generateBoxNumber(med.name);
+          await med.save();
+        }
+        console.log(`Backfilled box numbers for ${unboxedMedicines.length} existing medicines.`);
+      }
+    } catch(e) { console.error("Seeding error:", e); }
+  } catch (err) {
+    console.error("MongoDB Connection Error:", err);
+    process.exit(1);
+  }
+};
+
+connectDB();
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
