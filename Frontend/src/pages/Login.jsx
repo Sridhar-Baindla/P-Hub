@@ -93,6 +93,8 @@ const Login = () => {
       console.error('Auth error:', error);
       if (error.name === 'AbortError') {
         setErrorMsg('Connection timed out. Please check your internet/server.');
+      } else if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+        setErrorMsg(`Cannot connect to server at ${API_URL}. Please ensure the backend is running and accessible.`);
       } else {
         setErrorMsg(error.message || 'An unexpected error occurred.');
       }

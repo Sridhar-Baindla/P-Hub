@@ -49,7 +49,11 @@ const WarehouseLogin = () => {
       await login(admin, token);
       navigate('/warehouse');
     } catch (err) {
-      setError(err.message || 'Connection error. Please try again.');
+      if (err.message === 'Failed to fetch' || err.message.includes('NetworkError')) {
+        setError(`Cannot connect to server at ${API_URL}. Please ensure the backend is running and accessible.`);
+      } else {
+        setError(err.message || 'Connection error. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

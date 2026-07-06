@@ -38,8 +38,12 @@ const AdminLogin = () => {
       } else {
         setErrorMsg('Invalid admin credentials.');
       }
-    } catch {
-      setErrorMsg('An error occurred during authentication. Please try again.');
+    } catch (err) {
+      if (err && (err.message === 'Failed to fetch' || err.message.includes('NetworkError'))) {
+        setErrorMsg('Cannot connect to server. Please ensure the backend is running and accessible.');
+      } else {
+        setErrorMsg('An error occurred during authentication. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
