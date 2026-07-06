@@ -67,7 +67,7 @@ const Login = () => {
         console.error("Non-JSON response received:", text);
         // Provide a very clear error if the server returned HTML instead of JSON
         const preview = text.substring(0, 100).replace(/\n/g, ' ');
-        throw new Error(`Server error (${res.status}): Expected JSON but received HTML or plain text. This often happens if the request was redirected to HTTP/HTTPS or an invalid path. Content: ${preview}...`);
+        throw new Error(`Server error (${res.status}): Expected JSON but received HTML or plain text. This often happens if the request was redirected to HTTP/HTTPS or an invalid path. Content: ${preview}...`, { cause: err });
       }
 
       if (!res.ok) {

@@ -107,53 +107,6 @@ const Checkout = () => {
       phone: addr.phone
     });
   };
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-    if (!paymentMethod) {
-      alert('Please select a payment method');
-      return;
-    }
-
-    if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
-      const generatedTxn = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      setTxnId(generatedTxn);
-
-      let scheme = 'upi://pay';
-      if (paymentMethod === 'PhonePe') scheme = 'phonepe://pay';
-      else if (paymentMethod === 'Google Pay') scheme = 'tez://upi/pay';
-      else if (paymentMethod === 'Paytm') scheme = 'paytmmp://pay';
-
-      const upiUrl = `${scheme}?pa=6079090876081013@axl&pn=BAINDLA%20SRIDHAR&mc=0000&mode=02&purpose=00&tr=${generatedTxn}&am=${total.toFixed(2)}&cu=INR`;
-      setQrUrl(upiUrl);
-      setShowPhonePeOverlay(true);
-    } else {
-      processOrder();
-    }
-  };
-
-  useEffect(() => {
-    if (showPhonePeOverlay && txnId) {
-      const socket = io(SOCKET_URL);
-      socketRef.current = socket;
-
-      socket.emit('join_payment_room', txnId);
-
-      socket.on('payment_status', (data) => {
-        if (data.status === 'success') {
-          socket.disconnect();
-          setShowPhonePeOverlay(false);
-          processOrder('Paid', txnId);
-        }
-      });
-    }
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-    };
-  }, [showPhonePeOverlay, txnId]);
 
   const processOrder = async (pStatus = 'Pending', providedUtr = '') => {
     setOrderPlacing(true);
@@ -207,6 +160,54 @@ const Checkout = () => {
       setOrderPlacing(false);
     }
   };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+    if (!paymentMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+
+    if (paymentMethod === 'PhonePe' || paymentMethod === 'Google Pay' || paymentMethod === 'Paytm') {
+      const generatedTxn = 'TXN' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      setTxnId(generatedTxn);
+
+      let scheme = 'upi://pay';
+      if (paymentMethod === 'PhonePe') scheme = 'phonepe://pay';
+      else if (paymentMethod === 'Google Pay') scheme = 'tez://upi/pay';
+      else if (paymentMethod === 'Paytm') scheme = 'paytmmp://pay';
+
+      const upiUrl = `${scheme}?pa=6079090876081013@axl&pn=BAINDLA%20SRIDHAR&mc=0000&mode=02&purpose=00&tr=${generatedTxn}&am=${total.toFixed(2)}&cu=INR`;
+      setQrUrl(upiUrl);
+      setShowPhonePeOverlay(true);
+    } else {
+      processOrder();
+    }
+  };
+
+  useEffect(() => {
+    if (showPhonePeOverlay && txnId) {
+      const socket = io(SOCKET_URL);
+      socketRef.current = socket;
+
+      socket.emit('join_payment_room', txnId);
+
+      socket.on('payment_status', (data) => {
+        if (data.status === 'success') {
+          socket.disconnect();
+          setShowPhonePeOverlay(false);
+          processOrder('Paid', txnId);
+        }
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [showPhonePeOverlay, txnId]);
 
   const PhonePeOverlay = () => (
     <div className="phonepe-overlay" style={{
@@ -329,7 +330,7 @@ const Checkout = () => {
                 <div
                   key={method.id}
                   className={`payment-option ${paymentMethod === method.id ? 'active' : ''}`}
-                  onClick={() => { setPaymentMethod(method.id); setShowQR(['PhonePe', 'Google Pay', 'Paytm'].includes(method.id)); }}
+                  onClick={() => { setPaymentMethod(method.id); }}
                 >
                   <div className="radio-circle"></div>
                   <span>{method.name}</span>

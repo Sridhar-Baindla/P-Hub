@@ -36,7 +36,7 @@ const WarehouseLogin = () => {
         data = text ? JSON.parse(text) : {};
       } catch (err) {
         const preview = text.substring(0, 100).replace(/\n/g, ' ');
-        throw new Error(`Server error (${res.status}): Expected JSON but received HTML/Text. Content: ${preview}...`);
+        throw new Error(`Server error (${res.status}): Expected JSON but received HTML/Text. Content: ${preview}...`, { cause: err });
       }
 
       if (!res.ok) {

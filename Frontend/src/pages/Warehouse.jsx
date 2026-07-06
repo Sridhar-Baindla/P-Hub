@@ -83,6 +83,7 @@ const Warehouse = () => {
 
   useEffect(() => {
     if (warehouseAdmin && warehouseAdmin.role === 'warehouse_manager') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMedicines();
       fetchStock(warehouseAdmin.location);
       fetchOrders();

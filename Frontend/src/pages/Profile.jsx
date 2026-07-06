@@ -13,6 +13,7 @@ const Profile = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tab);
     }
   }, [searchParams]);
