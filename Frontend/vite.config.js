@@ -12,8 +12,12 @@ export default defineConfig({
         changeOrigin: true, 
         secure: false,
         configure: (proxy) => {
-          proxy.on('error', (err) => {
+          proxy.on('error', (err, req, res) => {
             console.log('proxy error', err);
+            if (res && !res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'text/plain' });
+              res.end('Proxy error: Could not connect to backend server.');
+            }
           });
           proxy.on('proxyReq', (proxyReq, req) => {
             console.log('Sending Request to the Target:', req.method, req.url);
